@@ -1,6 +1,10 @@
 extern crate kiss3d;
 extern crate nalgebra as na;
 
+mod world;
+mod chunk;
+mod block;
+
 use kiss3d::camera::FirstPerson;
 use kiss3d::event::{Action, Key, WindowEvent};
 use kiss3d::light::Light;
