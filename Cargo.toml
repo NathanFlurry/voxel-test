@@ -1,0 +1,9 @@
+[package]
+name = "kiss3d-test"
+version = "0.1.0"
+authors = ["NathanFlurry <github@nathanflurry.com>"]
+edition = "2018"
+
+[dependencies]
+kiss3d = "0.17.1"
+nalgebra = "0.16.13"
