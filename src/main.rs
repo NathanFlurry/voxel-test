@@ -17,7 +17,11 @@ use crate::chunk::Chunk;
 use crate::block::Block;
 use crate::chunk::ChunkBlockIndex;
 use crate::world::WorldBlockIndex;
-use na::Translation3;
+use kiss3d::resource::Mesh;
+use std::rc::Rc;
+use std::cell::RefCell;
+use na::Vector3;
+use na::Point2;
 
 struct ProceduralWorld {
     // TODO: Add seed and noise generator based on the seed
@@ -36,7 +40,6 @@ impl WorldDelegate for ProceduralWorld {
         // Create floor
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
-                println!("Setting in chunk {} {}", x, y);
                 chunk.set_block(&ChunkBlockIndex::new(x, y, if x*y%2==0 { 3 } else { 0 }), Block::DIRT);
 //                chunk.set_block(&ChunkBlockIndex::new(x, y, 0), Block::DIRT);
             }
@@ -86,6 +89,112 @@ fn main() {
     }
 
     // Render to world
+    enum BlockSide {}
+    let mut coords = Vec::new();
+    let mut uvs = Vec::new();
+    let mut normals = Vec::new();
+    let mut faces = Vec::new();
+    fn add_cube(
+        coords: &mut Vec<Point3<f32>>,
+        uvs: &mut Vec<Point2<f32>>,
+        normals: &mut Vec<Vector3<f32>>,
+        faces: &mut Vec<Point3<u16>>,
+        x: u32, y: u32, z: u32,  // World block index
+        top: bool, bottom: bool, left: bool, right: bool, front: bool, back: bool
+    ) {
+        let x = x as f32;
+        let y = y as f32;
+        let z = z as f32;
+
+        let x0 = x;
+        let x1 = x + 1.;
+        let y0 = y;
+        let y1 = y + 1.;
+        let z0 = z;
+        let z1 = z + 1.;
+
+        let _1 = 1.;
+        let m1 = -_1;
+        let _0 = 0.;
+
+        coords.push(Point3::new(x0, y0, z1));
+        coords.push(Point3::new(x0, y0, z0));
+        coords.push(Point3::new(x1, y0, z0));
+        coords.push(Point3::new(x1, y0, z1));
+        coords.push(Point3::new(x0, y1, z1));
+        coords.push(Point3::new(x0, y1, z0));
+        coords.push(Point3::new(x1, y1, z0));
+        coords.push(Point3::new(x1, y1, z1));
+
+        uvs.push(Point2::new(_0, _1));
+        uvs.push(Point2::new(_1, _1));
+        uvs.push(Point2::new(_0, _0));
+        uvs.push(Point2::new(_1, _0));
+
+        normals.push(Vector3::new(m1, _0, _0));
+        normals.push(Vector3::new(_0, _0, m1));
+        normals.push(Vector3::new(_1, _0, _0));
+        normals.push(Vector3::new(_0, _0, _1));
+        normals.push(Vector3::new(_0, m1, _0));
+        normals.push(Vector3::new(_0, _1, _0));
+
+        let _0 = (coords.len() - 8) as u16;
+        let _1 = (coords.len() - 7) as u16;
+        let _2 = (coords.len() - 6) as u16;
+        let _3 = (coords.len() - 5) as u16;
+        let _4 = (coords.len() - 4) as u16;
+        let _5 = (coords.len() - 3) as u16;
+        let _6 = (coords.len() - 2) as u16;
+        let _7 = (coords.len() - 1) as u16;
+
+        faces.push(Point3::new(_4, _0, _0));
+        faces.push(Point3::new(_5, _0, _1));
+        faces.push(Point3::new(_0, _0, _2));
+
+        faces.push(Point3::new(_5, _0, _1));
+        faces.push(Point3::new(_1, _0, _3));
+        faces.push(Point3::new(_0, _0, _2));
+
+        faces.push(Point3::new(_5, _1, _0));
+        faces.push(Point3::new(_6, _1, _1));
+        faces.push(Point3::new(_1, _1, _2));
+
+        faces.push(Point3::new(_6, _1, _1));
+        faces.push(Point3::new(_2, _1, _3));
+        faces.push(Point3::new(_1, _1, _2));
+
+        faces.push(Point3::new(_6, _2, _1));
+        faces.push(Point3::new(_7, _2, _0));
+        faces.push(Point3::new(_3, _2, _2));
+
+        faces.push(Point3::new(_2, _2, _3));
+        faces.push(Point3::new(_6, _2, _1));
+        faces.push(Point3::new(_3, _2, _2));
+
+        faces.push(Point3::new(_7, _3, _1));
+        faces.push(Point3::new(_4, _3, _0));
+        faces.push(Point3::new(_0, _3, _2));
+
+        faces.push(Point3::new(_3, _3, _3));
+        faces.push(Point3::new(_7, _3, _1));
+        faces.push(Point3::new(_0, _3, _2));
+
+        faces.push(Point3::new(_0, _4, _2));
+        faces.push(Point3::new(_1, _4, _0));
+        faces.push(Point3::new(_2, _4, _1));
+
+        faces.push(Point3::new(_3, _4, _3));
+        faces.push(Point3::new(_0, _4, _2));
+        faces.push(Point3::new(_2, _4, _1));
+
+        faces.push(Point3::new(_7, _5, _3));
+        faces.push(Point3::new(_6, _5, _1));
+        faces.push(Point3::new(_5, _5, _0));
+
+        faces.push(Point3::new(_4, _5, _2));
+        faces.push(Point3::new(_7, _5, _3));
+        faces.push(Point3::new(_5, _5, _0));
+    }
     for x in 0..Chunk::SIZE_X_U32 * 1 {
         for y in 0..Chunk::SIZE_Y_U32 * 1 {
             for z in 0..Chunk::SIZE_Z_U32 * 1 {
@@ -94,12 +203,27 @@ fn main() {
                 if block.is_air() { continue }
 
                 // Add cube
-                let mut block = window.add_cube(1., 1., 1.);
-//                println!("Adding {} {} {}", x, y, z);
-                block.append_translation(&Translation3::new(x as f32, z as f32, y as f32));
+//                let mut block = window.add_cube(1., 1., 1.);
+//                block.append_translation(&Translation3::new(x as f32, z as f32, y as f32));
+
+                // Add mesh
+                add_cube(
+                    &mut coords,
+                    &mut uvs,
+                    &mut normals,
+                    &mut faces,
+                    x, y, z,
+                    true, true, true, true, true, true
+                );
             }
         }
     }
+
+    // Add the mesh
+    let mesh = Rc::new(RefCell::new(Mesh::new(
+        coords, faces, Some(normals), Some(uvs), false,
+    )));
+    let world_mesh = window.add_mesh(mesh, Vector3::new(1., 1., 1.));
 
     while !window.should_close() {
         // Update the current camera.
