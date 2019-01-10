@@ -59,7 +59,7 @@ fn generate_world() -> World {
 
 fn main() {
     // Create camera
-    let eye = Point3::new(10.0f32, 10.0, 10.0);
+    let eye = Point3::new(0., 10., -20.);
     let at = Point3::origin();
     let mut first_person = FirstPerson::new(eye, at);
     first_person.set_move_step(0.05);
@@ -73,16 +73,16 @@ fn main() {
     window.set_light(Light::StickToCamera);
 
     // Add test cube
-    let mut cube = window.add_cube(1., 1., 1.);
+    let mut cube = window.add_cube(0.25, 0.25, 0.25);
     cube.set_color(0., 1., 0.);
 
     // Create world
     let mut world = generate_world();
 
     // Set block
-    for x in 10..=15 {
-        for y in 10..=15 {
-            for z in 15..=17 {
+    for x in 10..=20 {
+        for y in 10..=120 {
+            for z in 15..=20 {
                 world.set_block(&WorldBlockIndex::new(x, y, z), Block::DIRT);
             }
         }
@@ -94,7 +94,7 @@ fn main() {
     let mut uvs = Vec::new();
     let mut normals = Vec::new();
     let mut faces = Vec::new();
-    fn add_cube(
+    fn add_cube(  // TODO: Go back to planes, since we can't share normals
         coords: &mut Vec<Point3<f32>>,
         uvs: &mut Vec<Point2<f32>>,
         normals: &mut Vec<Vector3<f32>>,
@@ -143,18 +143,45 @@ fn main() {
         let _6 = (coords.len() - 2) as u16;
         let _7 = (coords.len() - 1) as u16;
 
-        faces.push(Point3::new(_4, _5, _0));
-        faces.push(Point3::new(_5, _1, _0));
-        faces.push(Point3::new(_5, _6, _1));
-        faces.push(Point3::new(_6, _2, _1));
-        faces.push(Point3::new(_6, _7, _3));
-        faces.push(Point3::new(_2, _6, _3));
-        faces.push(Point3::new(_7, _4, _0));
-        faces.push(Point3::new(_3, _7, _0));
-        faces.push(Point3::new(_0, _1, _2));
-        faces.push(Point3::new(_3, _0, _2));
-        faces.push(Point3::new(_7, _6, _5));
-        faces.push(Point3::new(_4, _7, _5));
+        if left { faces.push(Point3::new(_4, _5, _0)); }
+        if left { faces.push(Point3::new(_5, _1, _0)); }
+        if back { faces.push(Point3::new(_5, _6, _1)); }
+        if back { faces.push(Point3::new(_6, _2, _1)); }
+        if right { faces.push(Point3::new(_6, _7, _3)); }
+        if right { faces.push(Point3::new(_2, _6, _3)); }
+        if back { faces.push(Point3::new(_7, _4, _0)); }
+        if back { faces.push(Point3::new(_3, _7, _0)); }
+        if front { faces.push(Point3::new(_0, _1, _2)); }
+        if front { faces.push(Point3::new(_3, _0, _2)); }
+        if top { faces.push(Point3::new(_7, _6, _5)); }
+        if top { faces.push(Point3::new(_4, _7, _5)); }
+    }
+
+    enum DeltaDir {
+        Neg, None, Pos
+    }
+
+    impl DeltaDir {
+        fn checked_add(&self, base: u32) -> Option<u32> {
+            match self {
+                DeltaDir::Neg => base.checked_sub(1),
+                DeltaDir::None => Some(base),
+                DeltaDir::Pos => base.checked_add(1)
+            }
+        }
+    }
+
+    fn has_block(
+        world: &mut World,
+        x: u32, y: u32, z: u32,
+        dx: DeltaDir, dy: DeltaDir, dz: DeltaDir
+    ) -> bool {
+        // NOTE: Maybe it should return true so it doesn't show a face on that side
+        let x = if let Some(x) = dx.checked_add(x) { x } else { return false };
+        let y = if let Some(y) = dy.checked_add(y) { y } else { return false };
+        let z = if let Some(z) = dz.checked_add(z) { z } else { return false };
+
+        !world.get_block_mut(&WorldBlockIndex::new(x, y, z)).is_air()
     }
     for x in 0..Chunk::SIZE_X_U32 * 1 {
         for y in 0..Chunk::SIZE_Y_U32 * 1 {
@@ -174,7 +201,12 @@ fn main() {
                     &mut normals,
                     &mut faces,
                     x, y, z,
-                    true, true, true, true, true, true
+                    !has_block(&mut world, x, y, z, DeltaDir::None, DeltaDir::None, DeltaDir::Pos),
+                    !has_block(&mut world, x, y, z, DeltaDir::None, DeltaDir::None, DeltaDir::Neg),
+                    !has_block(&mut world, x, y, z, DeltaDir::Neg, DeltaDir::None, DeltaDir::None),
+                    !has_block(&mut world, x, y, z, DeltaDir::Pos, DeltaDir::None, DeltaDir::None),
+                    !has_block(&mut world, x, y, z, DeltaDir::None, DeltaDir::Pos, DeltaDir::None),
+                    !has_block(&mut world, x, y, z, DeltaDir::None, DeltaDir::Neg, DeltaDir::None),
                 );
             }
         }
@@ -199,6 +231,11 @@ fn main() {
                 _ => {}
             }
         }
+
+        // Draw origin
+        window.draw_line(&Point3::new(0., 0., 0.), &Point3::new(1., 0., 0.), &Point3::new(1., 0., 0.));
+        window.draw_line(&Point3::new(0., 0., 0.), &Point3::new(0., 1., 0.), &Point3::new(0., 1., 0.));
+        window.draw_line(&Point3::new(0., 0., 0.), &Point3::new(0., 0., 1.), &Point3::new(0.25, 0.25, 1.));
 
 
         // Render
