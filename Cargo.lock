@@ -401,14 +401,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kiss3d-test"
-version = "0.1.0"
-dependencies = [
- "kiss3d 0.17.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "nalgebra 0.16.13 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1060,6 +1052,14 @@ dependencies = [
 name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "voxel-test"
+version = "0.1.0"
+dependencies = [
+ "kiss3d 0.17.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra 0.16.13 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "walkdir"

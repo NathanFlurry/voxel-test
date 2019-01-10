@@ -1,5 +1,5 @@
 [package]
-name = "kiss3d-test"
+name = "voxel-test"
 version = "0.1.0"
 authors = ["NathanFlurry <github@nathanflurry.com>"]
 edition = "2018"
