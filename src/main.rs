@@ -14,6 +14,8 @@ use crate::world::World;
 use crate::world::WorldDelegate;
 use crate::world::ChunkIndex;
 use crate::chunk::Chunk;
+use crate::block::Block;
+use crate::chunk::ChunkBlockIndex;
 
 struct ProceduralWorld {
     // TODO: Add seed and noise generator based on the seed
@@ -27,8 +29,16 @@ impl ProceduralWorld {
 
 impl WorldDelegate for ProceduralWorld {
     fn create_chunk(&self, index: &ChunkIndex) -> Chunk {
-        // TODO: Generate world based on a seed
-        unimplemented!()
+        let mut chunk = Chunk::empty();
+
+        // Create floor
+        for x in 0..Chunk::SIZE_X {
+            for y in 0..Chunk::SIZE_Y {
+                chunk.set_block(&ChunkBlockIndex::new(x, y, if x*y%2==0 { 3 } else { 0 }), Block::DIRT);
+            }
+        }
+
+        chunk
     }
 }
 
