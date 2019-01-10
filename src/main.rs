@@ -10,6 +10,35 @@ use kiss3d::event::{Action, Key, WindowEvent};
 use kiss3d::light::Light;
 use kiss3d::window::Window;
 use na::Point3;
+use crate::world::World;
+use crate::world::WorldDelegate;
+use crate::world::ChunkIndex;
+use crate::chunk::Chunk;
+
+struct ProceduralWorld {
+    // TODO: Add seed and noise generator based on the seed
+}
+
+impl ProceduralWorld {
+    fn new() -> ProceduralWorld {
+        ProceduralWorld { }
+    }
+}
+
+impl WorldDelegate for ProceduralWorld {
+    fn create_chunk(&self, index: &ChunkIndex) -> Chunk {
+        // TODO: Generate world based on a seed
+        unimplemented!()
+    }
+}
+
+fn generate_world() -> World {
+    let delegate = ProceduralWorld::new();
+
+    let mut world = World::new(Box::new(delegate));
+
+    world
+}
 
 fn main() {
     // Create camera
