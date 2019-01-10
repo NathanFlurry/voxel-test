@@ -82,7 +82,7 @@ fn main() {
     // Set block
     for x in 10..=15 {
         for y in 10..=15 {
-            for z in 5..=5 {
+            for z in 15..=17 {
                 world.set_block(&WorldBlockIndex::new(x, y, z), Block::DIRT);
             }
         }
@@ -102,16 +102,12 @@ fn main() {
         x: u32, y: u32, z: u32,  // World block index
         top: bool, bottom: bool, left: bool, right: bool, front: bool, back: bool
     ) {
-        let x = x as f32;
-        let y = y as f32;
-        let z = z as f32;
-
-        let x0 = x;
-        let x1 = x + 1.;
-        let y0 = y;
-        let y1 = y + 1.;
-        let z0 = z;
-        let z1 = z + 1.;
+        let x0 = x as f32;
+        let x1 = x0 + 1.;
+        let y0 = z as f32;  // Flip Y with Z
+        let y1 = y0 + 1.;
+        let z0 = y as f32;  // Flip Z with Y
+        let z1 = z0 + 1.;
 
         let _1 = 1.;
         let m1 = -_1;
@@ -147,53 +143,18 @@ fn main() {
         let _6 = (coords.len() - 2) as u16;
         let _7 = (coords.len() - 1) as u16;
 
-        faces.push(Point3::new(_4, _0, _0));
-        faces.push(Point3::new(_5, _0, _1));
-        faces.push(Point3::new(_0, _0, _2));
-
-        faces.push(Point3::new(_5, _0, _1));
-        faces.push(Point3::new(_1, _0, _3));
-        faces.push(Point3::new(_0, _0, _2));
-
+        faces.push(Point3::new(_4, _5, _0));
         faces.push(Point3::new(_5, _1, _0));
-        faces.push(Point3::new(_6, _1, _1));
-        faces.push(Point3::new(_1, _1, _2));
-
-        faces.push(Point3::new(_6, _1, _1));
-        faces.push(Point3::new(_2, _1, _3));
-        faces.push(Point3::new(_1, _1, _2));
-
+        faces.push(Point3::new(_5, _6, _1));
         faces.push(Point3::new(_6, _2, _1));
-        faces.push(Point3::new(_7, _2, _0));
-        faces.push(Point3::new(_3, _2, _2));
-
-        faces.push(Point3::new(_2, _2, _3));
-        faces.push(Point3::new(_6, _2, _1));
-        faces.push(Point3::new(_3, _2, _2));
-
-        faces.push(Point3::new(_7, _3, _1));
-        faces.push(Point3::new(_4, _3, _0));
-        faces.push(Point3::new(_0, _3, _2));
-
-        faces.push(Point3::new(_3, _3, _3));
-        faces.push(Point3::new(_7, _3, _1));
-        faces.push(Point3::new(_0, _3, _2));
-
-        faces.push(Point3::new(_0, _4, _2));
-        faces.push(Point3::new(_1, _4, _0));
-        faces.push(Point3::new(_2, _4, _1));
-
-        faces.push(Point3::new(_3, _4, _3));
-        faces.push(Point3::new(_0, _4, _2));
-        faces.push(Point3::new(_2, _4, _1));
-
-        faces.push(Point3::new(_7, _5, _3));
-        faces.push(Point3::new(_6, _5, _1));
-        faces.push(Point3::new(_5, _5, _0));
-
-        faces.push(Point3::new(_4, _5, _2));
-        faces.push(Point3::new(_7, _5, _3));
-        faces.push(Point3::new(_5, _5, _0));
+        faces.push(Point3::new(_6, _7, _3));
+        faces.push(Point3::new(_2, _6, _3));
+        faces.push(Point3::new(_7, _4, _0));
+        faces.push(Point3::new(_3, _7, _0));
+        faces.push(Point3::new(_0, _1, _2));
+        faces.push(Point3::new(_3, _0, _2));
+        faces.push(Point3::new(_7, _6, _5));
+        faces.push(Point3::new(_4, _7, _5));
     }
     for x in 0..Chunk::SIZE_X_U32 * 1 {
         for y in 0..Chunk::SIZE_Y_U32 * 1 {
@@ -221,7 +182,8 @@ fn main() {
 
     // Add the mesh
     let mesh = Rc::new(RefCell::new(Mesh::new(
-        coords, faces, Some(normals), Some(uvs), false,
+//        coords, faces, Some(normals), Some(uvs), false,
+        coords, faces, None, None, false,
     )));
     let world_mesh = window.add_mesh(mesh, Vector3::new(1., 1., 1.));
 
