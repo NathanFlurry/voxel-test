@@ -16,6 +16,8 @@ use crate::world::ChunkIndex;
 use crate::chunk::Chunk;
 use crate::block::Block;
 use crate::chunk::ChunkBlockIndex;
+use crate::world::WorldBlockIndex;
+use na::Translation3;
 
 struct ProceduralWorld {
     // TODO: Add seed and noise generator based on the seed
@@ -34,7 +36,9 @@ impl WorldDelegate for ProceduralWorld {
         // Create floor
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
+                println!("Setting in chunk {} {}", x, y);
                 chunk.set_block(&ChunkBlockIndex::new(x, y, if x*y%2==0 { 3 } else { 0 }), Block::DIRT);
+//                chunk.set_block(&ChunkBlockIndex::new(x, y, 0), Block::DIRT);
             }
         }
 
@@ -70,7 +74,32 @@ fn main() {
     cube.set_color(0., 1., 0.);
 
     // Create world
-    let world = generate_world();
+    let mut world = generate_world();
+
+    // Set block
+    for x in 10..=15 {
+        for y in 10..=15 {
+            for z in 5..=5 {
+                world.set_block(&WorldBlockIndex::new(x, y, z), Block::DIRT);
+            }
+        }
+    }
+
+    // Render to world
+    for x in 0..Chunk::SIZE_X_U32 * 1 {
+        for y in 0..Chunk::SIZE_Y_U32 * 1 {
+            for z in 0..Chunk::SIZE_Z_U32 * 1 {
+                // Get block
+                let block = world.get_block_mut(&WorldBlockIndex::new(x, y, z));
+                if block.is_air() { continue }
+
+                // Add cube
+                let mut block = window.add_cube(1., 1., 1.);
+//                println!("Adding {} {} {}", x, y, z);
+                block.append_translation(&Translation3::new(x as f32, z as f32, y as f32));
+            }
+        }
+    }
 
     while !window.should_close() {
         // Update the current camera.

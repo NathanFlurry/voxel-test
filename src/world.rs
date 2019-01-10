@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::block::Block;
 use crate::chunk::ChunkBlockIndex;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct WorldBlockIndex {
     pub x: u32,
     pub y: u32,
@@ -11,6 +11,11 @@ pub struct WorldBlockIndex {
 }
 
 impl WorldBlockIndex {
+    #[inline]
+    pub fn new(x: u32, y: u32, z: u32) -> WorldBlockIndex {
+        WorldBlockIndex { x, y, z }
+    }
+
     #[inline]
     pub fn get_chunk_index(&self) -> ChunkIndex {
         ChunkIndex::new(self.x / Chunk::SIZE_X_U32, self.y / Chunk::SIZE_Y_U32, self.z / Chunk::SIZE_Z_U32)
@@ -27,7 +32,7 @@ impl WorldBlockIndex {
     }
 }
 
-#[derive(Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct ChunkIndex {
     pub x: u32,
     pub y: u32,
@@ -76,5 +81,10 @@ impl World {
     pub fn get_block_mut(&mut self, index: &WorldBlockIndex) -> &mut Block {
         let chunk = self.get_or_create_chunk(&index.get_chunk_index());
         chunk.get_block_mut(&index.get_chunk_block_index())
+    }
+
+    pub fn set_block(&mut self, index: &WorldBlockIndex, block: Block) {
+        let chunk = self.get_or_create_chunk(&index.get_chunk_index());
+        chunk.set_block(&index.get_chunk_block_index(), block);
     }
 }

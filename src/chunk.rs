@@ -1,5 +1,6 @@
 use crate::block::Block;
 
+#[derive(Debug)]
 pub struct ChunkBlockIndex {
     pub x: usize,
     pub y: usize,
@@ -21,8 +22,8 @@ pub struct Chunk {
 
 impl Chunk {
     pub const SIZE_X: usize = 32;
-    pub const SIZE_Y: usize = 64;
-    pub const SIZE_Z: usize = 32;
+    pub const SIZE_Y: usize = 32;
+    pub const SIZE_Z: usize = 64;
     pub const SIZE_X_U32: u32 = Chunk::SIZE_X as u32;
     pub const SIZE_Y_U32: u32 = Chunk::SIZE_Y as u32;
     pub const SIZE_Z_U32: u32 = Chunk::SIZE_Z as u32;
