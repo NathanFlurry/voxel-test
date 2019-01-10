@@ -59,6 +59,9 @@ fn main() {
     let mut cube = window.add_cube(1., 1., 1.);
     cube.set_color(0., 1., 0.);
 
+    // Create world
+    let world = generate_world();
+
     while !window.should_close() {
         // Update the current camera.
         for event in window.events().iter() {

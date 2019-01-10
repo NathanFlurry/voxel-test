@@ -13,21 +13,21 @@ pub struct WorldBlockIndex {
 impl WorldBlockIndex {
     #[inline]
     pub fn get_chunk_index(&self) -> ChunkIndex {
-        ChunkIndex::new(self.x / Chunk::SIZE_X, self.y / Chunk::SIZE_Y, self.z / Chunk::SIZE_Z)
+        ChunkIndex::new(self.x / Chunk::SIZE_X_U32, self.y / Chunk::SIZE_Y_U32, self.z / Chunk::SIZE_Z_U32)
     }
 
     #[inline]
     pub fn get_chunk_block_index(&self) -> ChunkBlockIndex {
         let chunk_index = self.get_chunk_index();
         ChunkBlockIndex::new(
-            self.x - chunk_index.x * Chunk::SIZE_X,
-            self.y - chunk_index.y * Chunk::SIZE_Y,
-            self.z - chunk_index.z * Chunk::SIZE_Z,
+            self.x as usize - chunk_index.x as usize * Chunk::SIZE_X,
+            self.y as usize - chunk_index.y as usize * Chunk::SIZE_Y,
+            self.z as usize - chunk_index.z as usize * Chunk::SIZE_Z
         )
     }
 }
 
-#[derive(Clone, Hash, Eq, PartialEq)]  // TODO: Can I get rid of partial equal
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct ChunkIndex {
     pub x: u32,
     pub y: u32,
