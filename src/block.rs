@@ -19,6 +19,7 @@ impl Block {
 }
 
 impl Block {
+    // TODO: Convert these constants to Point3?
     const FACES: [[usize; 4]; 6] = [
         [5, 4, 0, 1],  // Close
         [7, 6, 2, 3],  // Far

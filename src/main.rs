@@ -28,6 +28,8 @@ use crate::procedural_world::ProceduralWorld;
 use kiss3d::camera::Camera;
 use kiss3d::planar_camera::PlanarCamera;
 use kiss3d::post_processing::PostProcessingEffect;
+use kiss3d::resource::Texture;
+use kiss3d::resource::TextureManager;
 
 struct AppState {
     first_person: FirstPerson
@@ -69,12 +71,15 @@ impl AppState {
         chunk.process_sides();
         chunk.render(&mut coords, &mut faces, &mut normals, &mut uvs);
 
+        // Add texture
+        let texture = TextureManager::get_global_manager(|tm| tm.add_image_from_memory(include_bytes!("../assets/brick_grey.png"), "brick_grey"));
+
         // Add the mesh
         let mut mesh = Rc::new(RefCell::new(Mesh::new(
             coords, faces, Some(normals), Some(uvs), false,
         )));
         let mut world_mesh = window.add_mesh(mesh, Vector3::new(1., 1., 1.));
-        world_mesh.enable_backface_culling(true);
+        world_mesh.set_texture(texture);
 
         AppState { first_person }
     }
