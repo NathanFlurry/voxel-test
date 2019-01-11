@@ -5,7 +5,7 @@ use na::Point2;
 use na::Vector3;
 
 #[derive(Debug)]
-pub struct ChunkBlockIndex {
+pub struct ChunkBlockIndex {  // TODO: Remove all these unneeded structures
     pub x: usize,
     pub y: usize,
     pub z: usize
@@ -46,10 +46,6 @@ impl Chunk {
 
     pub fn get_block(&self, position: &ChunkBlockIndex) -> &Block {
         &self.data[position.x][position.y][position.z]
-    }
-
-    pub fn get_block_mut(&mut self, position: &ChunkBlockIndex) -> &mut Block {
-        &mut self.data[position.x][position.y][position.z]
     }
 
     pub fn set_block(&mut self, position: &ChunkBlockIndex, block: Block) {
@@ -94,7 +90,7 @@ impl Chunk {
                 let dx = if let Some(x) = dir[0].checked_add_usize(x) { x } else { continue; };
                 let dy = if let Some(y) = dir[1].checked_add_usize(y) { y } else { continue; };
                 let dz = if let Some(z) = dir[2].checked_add_usize(z) { z } else { continue; };
-                if dx < 0 || dx >= Chunk::SIZE_X || dy < 0 || dy >= Chunk::SIZE_Y || dz < 0 || dz >= Chunk::SIZE_Z { continue; }
+                if dx >= Chunk::SIZE_X || dy >= Chunk::SIZE_Y || dz >= Chunk::SIZE_Z { continue; }
 
                 // Check if the block can be seen from the given side
                 if self.data[dx][dy][dz].is_transparent() {

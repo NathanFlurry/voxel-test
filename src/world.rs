@@ -78,11 +78,6 @@ impl World {
         self.chunks.get_mut(&index).unwrap()
     }
 
-    pub fn get_block_mut(&mut self, index: &WorldBlockIndex) -> &mut Block {
-        let chunk = self.get_or_create_chunk(&index.get_chunk_index());
-        chunk.get_block_mut(&index.get_chunk_block_index())
-    }
-
     pub fn set_block(&mut self, index: &WorldBlockIndex, block: Block) {
         let chunk = self.get_or_create_chunk(&index.get_chunk_index());
         chunk.set_block(&index.get_chunk_block_index(), block);
