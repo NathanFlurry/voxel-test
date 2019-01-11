@@ -30,6 +30,8 @@ use kiss3d::planar_camera::PlanarCamera;
 use kiss3d::post_processing::PostProcessingEffect;
 use kiss3d::resource::Texture;
 use kiss3d::resource::TextureManager;
+use std::f64;
+use std::u32;
 
 struct AppState {
     first_person: FirstPerson
@@ -37,6 +39,9 @@ struct AppState {
 
 impl AppState {
     fn new(window: &mut Window) -> AppState {
+        // Set BG
+        window.set_background_color(0.62, 0.92, 0.99);
+
         // Create camera
         let eye = Point3::new(0., 10., -20.);
         let at = Point3::origin();
@@ -52,13 +57,16 @@ impl AppState {
         let mut world = World::new(Box::new(delegate));
 
         // Set block
-        for x in 10..=20 {
-            for y in 10..=20 {
-                for z in 15..=20 {
-                    world.set_block(&WorldBlockIndex::new(x, y, z), Block::DIRT);
-                }
-            }
-        }
+//        for x in 10..=20 {
+//            for y in 10..=20 {
+//                for z in 15..=20 {
+//                    world.set_block(&WorldBlockIndex::new(x, y, z), Block::DIRT);
+//                }
+//            }
+//        }
+
+        // Set sphere
+        fill_sphere(&mut world, Block::DIRT, Chunk::SIZE_X_U32 / 2, Chunk::SIZE_Y_U32 / 2, Chunk::SIZE_Z_U32 / 2, 5.);
 
         // Render to world
         let mut coords = Vec::new();
@@ -107,6 +115,20 @@ impl State for AppState {
 
     fn cameras_and_effect(&mut self) -> (Option<&mut Camera>, Option<&mut PlanarCamera>, Option<&mut PostProcessingEffect>) {
         (Some(&mut self.first_person), None, None)
+    }
+}
+
+fn fill_sphere(world: &mut World, block: Block, x_origin: u32, y_origin: u32, z_origin: u32, radius: f64) {
+    let radius_ceil = radius.ceil() as u32;
+    for x in x_origin-radius_ceil..=x_origin+radius_ceil {
+        for y in y_origin-radius_ceil..=y_origin+radius_ceil {
+            for z in z_origin-radius_ceil..=z_origin+radius_ceil {
+                let dist = ((x as f64 - x_origin as f64).powi(2) + (y as f64 - y_origin as f64).powi(2) + (z as f64 - z_origin as f64).powi(2)).sqrt();
+                if dist < radius + 1. {  // Adding 1 and using exclusive less-than makes a more natural sphere
+                    world.set_block(&WorldBlockIndex::new(x, y, z), block);
+                }
+            }
+        }
     }
 }
 
