@@ -52,29 +52,27 @@ impl Block {
         [ 0., -1.,  0.],
     ];
 
-//    const UVS: [[f32; 2]; 4] = [
-//        [0., 0.],
-//        [1., 0.],
-//        [1., 1.],
-//        [0., 1.],
-//    ];
+    const UVS: [[f32; 2]; 4] = [
+        [0., 0.],
+        [1., 0.],
+        [1., 1.],
+        [0., 1.],
+    ];
 
     pub fn render(&self, vertices: &mut Vec<Point3<f32>>, faces: &mut Vec<Point3<u16>>, normals: &mut Vec<Vector3<f32>>, uvs: &mut Vec<Point2<f32>>,  x: f32, y: f32, z: f32, sides: u8) {
         // If the block is empty, do nothing
         if sides == 0b000000 { return; }
-
-        println!("sides 0b{:b}", sides);
 
         // Add the vertices
         let start_vert_count = vertices.len();
         for side in 0..6 {
             if sides & (1 << side) != 0b000000 {
                 // Add the vert data
-                let faces_idx = &Block::FACES[side];
+                let face_index = &Block::FACES[side];
                 for &pos in &Block::FACE_ORDER {
                     // Get coords
-                    let mut coords_data = Block::VERTICES[faces_idx[pos]];
-                    let coords = Point3::new(coords_data[0] + x, coords_data[1] + z, coords_data[2] + y);
+                    let mut coords_data = Block::VERTICES[face_index[pos]];
+                    let coords = Point3::new(coords_data[0] + x, coords_data[1] + z, coords_data[2] + y);  // Flip Y and Z
                     vertices.push(coords);
 
                     // Get normal
@@ -83,8 +81,9 @@ impl Block {
                     normals.push(normal);
 
                     // TODO: UV COORDS
-//                    let uv_coords = self.uvs[face as usize][pos];
-//                    uvs.push(?);
+                    let uv_coord_data = Block::UVS[pos];
+                    let uv_coord = Point2::new(uv_coord_data[0], uv_coord_data[1]);
+                    uvs.push(uv_coord);
                 }
             }
         }
@@ -93,7 +92,6 @@ impl Block {
         assert_eq!(vertices.len(), normals.len());
 //        assert_eq!(vertices.len(), uvs.len());
         let vert_count = (vertices.len() - start_vert_count) as u16;
-        println!("vert count {} {} {} {} {}", faces.len(), vert_count, x, y, z);
         assert_eq!(vert_count % 3, 0);
         let start_vert_count = start_vert_count as u16;
         for i in 0..(vert_count / 3) {

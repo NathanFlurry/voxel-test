@@ -96,8 +96,6 @@ impl Chunk {
                 let dz = if let Some(z) = dir[2].checked_add_usize(z) { z } else { continue; };
                 if dx < 0 || dx >= Chunk::SIZE_X || dy < 0 || dy >= Chunk::SIZE_Y || dz < 0 || dz >= Chunk::SIZE_Z { continue; }
 
-                println!("dx dy dz {} {} {}", dx, dy, dz);
-
                 // Check if the block can be seen from the given side
                 if self.data[dx][dy][dz].is_transparent() {
                     sides |= 1 << side;
