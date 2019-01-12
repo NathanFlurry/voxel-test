@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 kiss3d = "0.17.1"
 nalgebra = "0.16.13"
+noise = "0.5.1"

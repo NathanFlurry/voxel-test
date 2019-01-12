@@ -1,5 +1,6 @@
 extern crate kiss3d;
 extern crate nalgebra as na;
+extern crate noise;
 
 mod block;
 mod chunk;
@@ -53,7 +54,7 @@ impl AppState {
         first_person.rebind_right_key(Some(Key::D));
 
         // Create world
-        let delegate = ProceduralWorld::new();
+        let delegate = ProceduralWorld::new(1234);
         let mut world = World::new(Box::new(delegate));
 
         // Set block
