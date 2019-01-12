@@ -58,7 +58,8 @@ impl AppState {
         let mut world = World::new(Box::new(delegate));
 
         // Set sphere
-        world.fill_ellipsoid(Block::STONE_BRICK, &WorldBlockIndex::new(5, 5, 40), &WorldBlockIndex::new(20, 20, 60));
+        let radius = 7;
+        world.fill_ellipsoid(Block::STONE_BRICK, &WorldBlockIndex::new(16 - radius, 16 - radius, 32 - radius), &WorldBlockIndex::new(16 + radius, 16 + radius, 32 + radius));
 
         // Render to world
         let mut coords = Vec::new();

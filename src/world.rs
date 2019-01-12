@@ -86,10 +86,11 @@ impl World {
 
 impl World {
     pub fn fill_ellipsoid(&mut self, block: Block, lower: &WorldBlockIndex, upper: &WorldBlockIndex) {
-        // Get sizes of the ellipsoid
-        let sx = (upper.x as f64 - lower.x as f64) / 2.;
-        let sy = (upper.y as f64 - lower.y as f64) / 2.;
-        let sz = (upper.z as f64 - lower.z as f64) / 2.;
+        // Get radii of the ellipsoid; we add 1 to the radius, since drawing an ellipsoid directly
+        // to the edge results in only one block touching the edge
+        let rx = (upper.x as f64 - lower.x as f64) / 2. + 1.;
+        let ry = (upper.y as f64 - lower.y as f64) / 2. + 1.;
+        let rz = (upper.z as f64 - lower.z as f64) / 2. + 1.;
 
         // Get the center of the ellipsoid
         let cx = (lower.x as f64 + upper.x as f64) / 2.;
@@ -102,9 +103,9 @@ impl World {
                 for z in lower.z..=upper.z {
                     // Get ellipsoid distance from the center
                     let dist = (
-                        ((x as f64 - cx as f64) / sx).powi(2) +
-                            ((y as f64 - cy as f64) / sy).powi(2) +
-                            ((z as f64 - cz as f64) / sz).powi(2)
+                        ((x as f64 - cx as f64) / rx).powi(2) +
+                            ((y as f64 - cy as f64) / ry).powi(2) +
+                            ((z as f64 - cz as f64) / rz).powi(2)
                     );
 
                     // Check if distance is within ellipsoid
