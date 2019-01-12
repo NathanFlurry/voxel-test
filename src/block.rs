@@ -8,14 +8,35 @@ pub type BlockSides = u8;
 pub struct Block(u8);
 
 impl Block {
+    const SPRITESHEET_WIDTH: usize = 1024;
+    const SPRITESHEET_HEIGHT: usize = 2048;
+    const SPRITESHEET_TILE_SIZE: usize = 128;
+    const SPRITESHEET_UV_TILE_SIZE_X: f32 = Block::SPRITESHEET_TILE_SIZE as f32 / Block::SPRITESHEET_WIDTH as f32;
+    const SPRITESHEET_UV_TILE_SIZE_Y: f32 = Block::SPRITESHEET_TILE_SIZE as f32 / Block::SPRITESHEET_HEIGHT as f32;
+
     pub const AIR: Block = Block(0);
     pub const DIRT: Block = Block(1);
+    pub const STONE: Block = Block(2);
+    pub const GRAVEL: Block = Block(3);
+    pub const STONE_BRICK: Block = Block(4);
+    pub const BRICK: Block = Block(5);
 
     pub fn is_air(&self) -> bool { *self == Block::AIR }
 
     pub fn is_transparent(&self) -> bool { self.is_air() }
 
     pub fn is_invisible(&self) -> bool { self.is_air() }
+
+    pub fn texture_pos(&self) -> (u8, u8) {
+        match *self {
+            Block::DIRT => (5, 1),
+            Block::STONE => (2, 5),
+            Block::GRAVEL => (4, 0),
+            Block::STONE_BRICK => (0, 0),
+            Block::BRICK => (2, 12),
+            _ => (0, 0)  // TODO: Add unknown block
+        }
+    }
 }
 
 impl Block {
@@ -64,6 +85,17 @@ impl Block {
         // If the block is empty, do nothing
         if sides == 0b000000 { return; }
 
+        // Find UV coordinates
+        let texture_pos = self.texture_pos();
+        let uv_lower = [texture_pos.0 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_X, texture_pos.1 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_Y];
+        let uv_upper = [uv_lower[0] + Block::SPRITESHEET_UV_TILE_SIZE_X, uv_lower[1] + Block::SPRITESHEET_UV_TILE_SIZE_Y];
+        let uv_coords = [
+            [uv_lower[0], uv_lower[1]],  // 0, 0
+            [uv_upper[0], uv_lower[1]],  // 1, 0
+            [uv_upper[0], uv_upper[1]],  // 1, 1
+            [uv_lower[0], uv_upper[1]],  // 0, 1
+        ];
+
         // Add the vertices
         let start_vert_count = vertices.len();
         for side in 0..6 {
@@ -81,17 +113,19 @@ impl Block {
                     let normal = Vector3::new(normal_data[0], normal_data[1], normal_data[2]);
                     normals.push(normal);
 
-                    // TODO: UV COORDS
-                    let uv_coord_data = Block::UVS[pos];
+                    // Get UV coords
+                    let uv_coord_data = uv_coords[pos];
                     let uv_coord = Point2::new(uv_coord_data[0], uv_coord_data[1]);
                     uvs.push(uv_coord);
                 }
             }
         }
 
-        // Add the faces
+        // Assert that there are the correct number items for vert data
         assert_eq!(vertices.len(), normals.len());
-//        assert_eq!(vertices.len(), uvs.len());
+        assert_eq!(vertices.len(), uvs.len());
+
+        // Add the faces
         let vert_count = (vertices.len() - start_vert_count) as u16;
         assert_eq!(vert_count % 3, 0);
         let start_vert_count = start_vert_count as u16;

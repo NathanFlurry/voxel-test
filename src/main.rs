@@ -58,7 +58,7 @@ impl AppState {
         let mut world = World::new(Box::new(delegate));
 
         // Set sphere
-        world.fill_ellipsoid(Block::AIR, &WorldBlockIndex::new(5, 5, 5), &WorldBlockIndex::new(20, 20, 20));
+        world.fill_ellipsoid(Block::STONE_BRICK, &WorldBlockIndex::new(5, 5, 40), &WorldBlockIndex::new(20, 20, 60));
 
         // Render to world
         let mut coords = Vec::new();
@@ -72,7 +72,7 @@ impl AppState {
         chunk.render(&mut coords, &mut faces, &mut normals, &mut uvs);
 
         // Add texture
-        let texture = TextureManager::get_global_manager(|tm| tm.add_image_from_memory(include_bytes!("../assets/brick_grey.png"), "brick_grey"));
+        let texture = TextureManager::get_global_manager(|tm| tm.add_image_from_memory(include_bytes!("../assets/spritesheet_tiles.png"), "spritesheet_tiles"));
 
         // Add the mesh
         let mut mesh = Rc::new(RefCell::new(Mesh::new(
