@@ -83,3 +83,36 @@ impl World {
         chunk.set_block(&index.get_chunk_block_index(), block);
     }
 }
+
+impl World {
+    pub fn fill_ellipsoid(&mut self, block: Block, lower: &WorldBlockIndex, upper: &WorldBlockIndex) {
+        // Get sizes of the ellipsoid
+        let sx = (upper.x as f64 - lower.x as f64) / 2.;
+        let sy = (upper.y as f64 - lower.y as f64) / 2.;
+        let sz = (upper.z as f64 - lower.z as f64) / 2.;
+
+        // Get the center of the ellipsoid
+        let cx = (lower.x as f64 + upper.x as f64) / 2.;
+        let cy = (lower.y as f64 + upper.y as f64) / 2.;
+        let cz = (lower.z as f64 + upper.z as f64) / 2.;
+
+        // Set the blocks
+        for x in lower.x..=upper.x {
+            for y in lower.y..=upper.y {
+                for z in lower.z..=upper.z {
+                    // Get ellipsoid distance from the center
+                    let dist = (
+                        ((x as f64 - cx as f64) / sx).powi(2) +
+                            ((y as f64 - cy as f64) / sy).powi(2) +
+                            ((z as f64 - cz as f64) / sz).powi(2)
+                    );
+
+                    // Check if distance is within ellipsoid
+                    if dist <= 1. {
+                        self.set_block(&WorldBlockIndex::new(x, y, z), block);
+                    }
+                }
+            }
+        }
+    }
+}
