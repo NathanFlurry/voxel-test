@@ -57,15 +57,6 @@ impl AppState {
         let delegate = ProceduralWorld::new(1234);
         let mut world = World::new(Box::new(delegate));
 
-        // Set block
-//        for x in 10..=20 {
-//            for y in 10..=20 {
-//                for z in 15..=20 {
-//                    world.set_block(&WorldBlockIndex::new(x, y, z), Block::DIRT);
-//                }
-//            }
-//        }
-
         // Set sphere
         world.fill_ellipsoid(Block::AIR, &WorldBlockIndex::new(5, 5, 5), &WorldBlockIndex::new(20, 20, 20));
 

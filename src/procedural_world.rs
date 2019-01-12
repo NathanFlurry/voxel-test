@@ -14,7 +14,7 @@ pub struct ProceduralWorld {
 impl ProceduralWorld {
     pub fn new(seed: u32) -> ProceduralWorld {
         ProceduralWorld {
-            noise: NoiseType::new().set_seed(seed).set_octaves(2)
+            noise: NoiseType::new().set_seed(seed).set_frequency(0.05)
         }
     }
 }
@@ -26,17 +26,16 @@ impl WorldDelegate for ProceduralWorld {
         // Create floor
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
-                let scale = 0.05;
-                let height = (Chunk::SIZE_Z as f64 / 2.) +  self.noise.get([x as f64 * scale, y as f64 * scale]) * 10.;
+                // Sample the noise for the height
+                let height = (Chunk::SIZE_Z as f64 / 2.) +  self.noise.get([x as f64, y as f64]) * 10.;
+
+                // Cap the height and cast to usize
                 let height = height.max(0.).min(Chunk::SIZE_Z as f64) as usize;
 
+                // Set the block to the given height
                 for z in 0..=height as usize {
                     chunk.set_block(&ChunkBlockIndex::new(x, y, z), Block::DIRT);
                 }
-
-//                chunk.set_block(&ChunkBlockIndex::new(x, y, if x*y%2==0 { 3 } else { 0 }), Block::DIRT);
-
-//                chunk.set_block(&ChunkBlockIndex::new(x, y, 0), Block::DIRT);
             }
         }
 
