@@ -52,13 +52,22 @@ struct Vertex {
 implement_vertex!(Vertex, position, color);
 
 struct VoxelTest {
-    program_register: ProgramRegister
+    program_register: ProgramRegister,
+    draw_params: glium::DrawParameters<'static>
 }
 
 impl VoxelTest {
     fn new(app: &mut app::App) -> VoxelTest {
         VoxelTest {
-            program_register: ProgramRegister::new(&app.display)
+            program_register: ProgramRegister::new(&app.display),
+            draw_params: glium::DrawParameters {
+                depth: glium::Depth {
+                    test: glium::DepthTest::IfLess,
+                    write: true,
+                    .. Default::default()
+                },
+                .. Default::default()
+            }
         }
     }
 }
@@ -88,16 +97,6 @@ impl app::AppState for VoxelTest {
             ]
         };
 
-        // MOVE ELSEWHERE: Setup draw params
-        let params = glium::DrawParameters {
-            depth: glium::Depth {
-                test: glium::DepthTest::IfLess,
-                write: true,
-                .. Default::default()
-            },
-            .. Default::default()
-        };
-
         // Render the triangle
         let mut target = app.display.draw();
         target.clear_color_and_depth((0., 0., 1., 1.), 1.);
@@ -106,7 +105,7 @@ impl app::AppState for VoxelTest {
             &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
             &self.program_register.default_program,
             &uniforms,
-            &params
+            &self.draw_params
         ).unwrap();
         target.finish().unwrap();
     }
