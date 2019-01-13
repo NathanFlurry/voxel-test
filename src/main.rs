@@ -141,7 +141,13 @@ impl app::AppState for VoxelTest {
     }
 
     fn process_event(&mut self, event: glutin::Event) {
-        println!("event {:?}", event);
+//        println!("event {:?}", event);
+
+        // Update camera
+        match event {
+            glutin::Event::WindowEvent { event, .. } => self.camera.process_input(&event),
+            _ => { }
+        };
     }
 }
 
