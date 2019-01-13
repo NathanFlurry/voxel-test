@@ -4,14 +4,39 @@ version = "0.1.0"
 authors = ["NathanFlurry <github@nathanflurry.com>"]
 edition = "2018"
 
+[features]
+default = []
+metal = ["gfx-backend-metal"]
+gl = ["gfx-backend-gl"]
+dx12 = ["gfx-backend-dx12"]
+vulkan = ["gfx-backend-vulkan"]
+unstable = []
+
 [dependencies]
-winit = "0.18.1"
-gfx-hal = "0.1.0"
-gfx-backend-metal = "0.1.0"
-
 noise = "0.5.1"
-
 na = "0.16.6"  # TEMP:
 
-[build-dependencies]
-glsl-to-spirv = "0.1.7"
+env_logger = "0.5"
+image = "0.19"
+log = "0.4"
+winit = "0.18"
+glsl-to-spirv = "0.1.4"
+gfx-hal = "0.1.0"
+gfx-backend-empty = "0.1.0"
+
+[dependencies.gfx-backend-gl]
+version = "0.1.0"
+features = ["glutin"]
+optional = true
+
+[dependencies.gfx-backend-vulkan]
+version = "0.1.0"
+optional = true
+
+[target.'cfg(any(target_os = "macos", all(target_os = "ios", target_arch = "aarch64")))'.dependencies.gfx-backend-metal]
+version = "0.1.0"
+optional = true
+
+[target.'cfg(windows)'.dependencies.gfx-backend-dx12]
+version = "0.1.0"
+optional = true

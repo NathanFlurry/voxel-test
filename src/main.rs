@@ -1,505 +1,757 @@
+#![cfg_attr(
+not(any(
+feature = "vulkan",
+feature = "dx12",
+feature = "metal",
+feature = "gl"
+)),
+allow(dead_code, unused_extern_crates, unused_imports)
+)]
+
+extern crate env_logger;
+#[cfg(feature = "dx12")]
+extern crate gfx_backend_dx12 as back;
+#[cfg(feature = "gl")]
+extern crate gfx_backend_gl as back;
+#[cfg(feature = "metal")]
+extern crate gfx_backend_metal as back;
+#[cfg(feature = "vulkan")]
+extern crate gfx_backend_vulkan as back;
+extern crate gfx_hal as hal;
+
+extern crate image;
 extern crate winit;
-extern crate gfx_hal;
-extern crate gfx_backend_metal as backend;
 
-extern crate noise;
-
-mod block;
-mod chunk;
-mod world;
-mod procedural_world;
-
-use na::Point3;
-use crate::world::World;
-use crate::world::WorldDelegate;
-use crate::world::ChunkIndex;
-use crate::chunk::Chunk;
-use crate::block::Block;
-use crate::chunk::ChunkBlockIndex;
-use crate::world::WorldBlockIndex;
-use std::rc::Rc;
-use std::cell::RefCell;
-use na::Vector3;
-use na::Point2;
-use crate::procedural_world::ProceduralWorld;
-use std::f64;
-use std::u32;
-use gfx_hal::{
-    command::{ClearColor, ClearValue},
-    format::{Aspects, ChannelType, Format, Swizzle},
-    image::{Access, Layout, SubresourceRange, ViewKind},
-    pass::{
-        Attachment, AttachmentLoadOp, AttachmentOps, AttachmentStoreOp, Subpass, SubpassDependency,
-        SubpassDesc, SubpassRef,
-    },
-    pool::CommandPoolCreateFlags,
-    pso::{
-        BlendState, ColorBlendDesc, ColorMask, EntryPoint, GraphicsPipelineDesc, GraphicsShaderSet,
-        PipelineStage, Rasterizer, Rect, Viewport,
-    },
-    queue::Submission,
-    Backbuffer, Device, FrameSync, Graphics, Instance, Primitive, Surface, SwapImageIndex,
-    Swapchain, SwapchainConfig,
-    window::{
-        Extent2D
-    }
+use hal::format::{AsFormat, ChannelType, Rgba8Srgb as ColorFormat, Swizzle};
+use hal::pass::Subpass;
+use hal::pso::{PipelineStage, ShaderStageFlags};
+use hal::queue::Submission;
+use hal::{
+    buffer, command, format as f, image as i, memory as m, pass, pool, pso, window::Extent2D,
 };
-use winit::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent};
+use hal::{Backbuffer, DescriptorPool, FrameSync, Primitive, SwapchainConfig};
+use hal::{Device, Instance, PhysicalDevice, Surface, Swapchain};
 
-//struct AppState {
-//    first_person: FirstPerson
-//}
-//
-//impl AppState {
-//    fn new(window: &mut Window) -> AppState {
-//        // Set BG
-//        window.set_background_color(0.62, 0.92, 0.99);
-//
-//        // Create camera
-//        let eye = Point3::new(0., 10., -20.);
-//        let at = Point3::origin();
-//        let mut first_person = FirstPerson::new(eye, at);
-//        first_person.set_move_step(0.05);
-//        first_person.rebind_up_key(Some(Key::W));
-//        first_person.rebind_down_key(Some(Key::S));
-//        first_person.rebind_left_key(Some(Key::A));
-//        first_person.rebind_right_key(Some(Key::D));
-//
-//        // Create world
-//        let delegate = ProceduralWorld::new(1234);
-//        let mut world = World::new(Box::new(delegate));
-//
-//        // Set sphere
-//        let radius = 7;
-//        world.fill_ellipsoid(Block::STONE_BRICK, &WorldBlockIndex::new(16 - radius, 16 - radius, 32 - radius), &WorldBlockIndex::new(16 + radius, 16 + radius, 32 + radius));
-//
-//        // Render to world
-//        let mut coords = Vec::new();
-//        let mut faces = Vec::new();
-//        let mut normals = Vec::new();
-//        let mut uvs = Vec::new();
-//
-//        // Get the chunk
-//        let mut chunk = world.get_or_create_chunk(&ChunkIndex::new(0, 0, 0));
-//        chunk.process_sides();
-//        chunk.render(&mut coords, &mut faces, &mut normals, &mut uvs);
-//
-//        // Add texture
-//        let texture = TextureManager::get_global_manager(|tm| tm.add_image_from_memory(include_bytes!("../assets/spritesheet_tiles.png"), "spritesheet_tiles"));
-//
-//        // Add the mesh
-//        let mut mesh = Rc::new(RefCell::new(Mesh::new(
-//            coords, faces, Some(normals), Some(uvs), false,
-//        )));
-//        let mut world_mesh = window.add_mesh(mesh, Vector3::new(1., 1., 1.));
-//        world_mesh.set_texture(texture);
-//
-//        AppState { first_person }
-//    }
-//}
-//
-//impl State for AppState {
-//    fn step(&mut self, window: &mut Window) {
-//        // Update the current camera.
-//        for event in window.events().iter() {
-//            match event.value {
-//                WindowEvent::Key(key, Action::Release, _) => {
-//                    if key == Key::F {
-//                        println!("Pay respects")
-//                    }
-//                }
-//                _ => {}
-//            }
-//        }
-//
-//        // Draw origin
-//        window.draw_line(&Point3::new(0., 0., 0.), &Point3::new(1., 0., 0.), &Point3::new(1., 0., 0.));
-//        window.draw_line(&Point3::new(0., 0., 0.), &Point3::new(0., 1., 0.), &Point3::new(0., 1., 0.));
-//        window.draw_line(&Point3::new(0., 0., 0.), &Point3::new(0., 0., 1.), &Point3::new(0.25, 0.25, 1.));
-//    }
-//
-//    fn cameras_and_effect(&mut self) -> (Option<&mut Camera>, Option<&mut PlanarCamera>, Option<&mut PostProcessingEffect>) {
-//        (Some(&mut self.first_person), None, None)
-//    }
-//}
+use std::fs;
+use std::io::{Cursor, Read};
 
-const DIMS: Extent2D = Extent2D { width: 256, height: 256 };
+#[cfg_attr(rustfmt, rustfmt_skip)]
+const DIMS: Extent2D = Extent2D { width: 1024,height: 768 };
 
+const ENTRY_NAME: &str = "main";
+
+#[derive(Debug, Clone, Copy)]
+#[allow(non_snake_case)]
+struct Vertex {
+    a_Pos: [f32; 2],
+    a_Uv: [f32; 2],
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+const QUAD: [Vertex; 6] = [
+    Vertex { a_Pos: [ -0.5, 0.33 ], a_Uv: [0.0, 1.0] },
+    Vertex { a_Pos: [  0.5, 0.33 ], a_Uv: [1.0, 1.0] },
+    Vertex { a_Pos: [  0.5,-0.33 ], a_Uv: [1.0, 0.0] },
+
+    Vertex { a_Pos: [ -0.5, 0.33 ], a_Uv: [0.0, 1.0] },
+    Vertex { a_Pos: [  0.5,-0.33 ], a_Uv: [1.0, 0.0] },
+    Vertex { a_Pos: [ -0.5,-0.33 ], a_Uv: [0.0, 0.0] },
+];
+
+const COLOR_RANGE: i::SubresourceRange = i::SubresourceRange {
+    aspects: f::Aspects::COLOR,
+    levels: 0..1,
+    layers: 0..1,
+};
+
+#[cfg(any(
+feature = "vulkan",
+feature = "dx12",
+feature = "metal",
+feature = "gl"
+))]
 fn main() {
-    // Create a window with winit.
-    let mut events_loop = EventsLoop::new();
+    env_logger::init();
 
-    let window = WindowBuilder::new()
-        .with_title("Part 00: Triangle")
-        .with_dimensions((DIMS.width as _, DIMS.height as _).into())
-        .build(&events_loop)
-        .unwrap();
+    let mut events_loop = winit::EventsLoop::new();
 
-    // Initialize our long-lived graphics state.
-    // We expect these to live for the whole duration of our program.
-
-    // The Instance serves as an entry point to the graphics API. The create method
-    // takes an application name and version - but these aren't important.
-    let instance = backend::Instance::create("Part 00: Triangle", 1);
-
-    // The surface is an abstraction for the OS's native window.
-    let mut surface = instance.create_surface(&window);
-
-    // An adapter represents a physical device - such as a graphics card.
-    // We're just taking the first one available, but you could choose one here.
-    let mut adapter = instance.enumerate_adapters().remove(0);
-
-    // The device is a logical device allowing you to perform GPU operations.
-    // The queue group contains a set of command queues which we can later submit
-    // drawing commands to.
-    //
-    // Here we're requesting 1 queue, with the `Graphics` capability so we can do
-    // rendering. We also pass a closure to choose the first queue family that our
-    // surface supports to allocate queues from. More on queue families in a later
-    // tutorial.
-    let num_queues = 1;
-    let (device, mut queue_group) = adapter
-        .open_with::<_, Graphics>(num_queues, |family| surface.supports_queue_family(family))
-        .unwrap();
-
-    // A command pool is used to acquire command buffers - which are used to
-    // send drawing instructions to the GPU.
-    let mut command_pool = unsafe {
-        device.create_command_pool_typed(
-            &queue_group,
-            CommandPoolCreateFlags::empty()
-        ).unwrap()
+    let wb = winit::WindowBuilder::new()
+        .with_dimensions(winit::dpi::LogicalSize::new(
+            DIMS.width as _,
+            DIMS.height as _,
+        ))
+        .with_title("quad".to_string());
+    // instantiate backend
+    #[cfg(not(feature = "gl"))]
+    let (_window, _instance, mut adapters, mut surface) = {
+        let window = wb.build(&events_loop).unwrap();
+        let instance = back::Instance::create("gfx-rs quad", 1);
+        let surface = instance.create_surface(&window);
+        let adapters = instance.enumerate_adapters();
+        (window, instance, adapters, surface)
     };
-
-    let physical_device = &adapter.physical_device;
-
-    // We want to get the capabilities (`caps`) of the surface, which tells us what
-    // parameters we can use for our swapchain later. We also get a list of supported
-    // image formats for our surface.
-    let (caps, formats, _, _) = surface.compatibility(physical_device);
-
-    let surface_color_format = {
-        // We must pick a color format from the list of supported formats. If there
-        // is no list, we default to Rgba8Srgb.
-        match formats {
-            Some(choices) => choices
-                .into_iter()
-                .find(|format| format.base_format().1 == ChannelType::Srgb)
-                .unwrap(),
-            None => Format::Rgba8Srgb,
-        }
-    };
-
-    // A render pass defines which attachments (images) are to be used for what
-    // purposes. Right now, we only have a color attachment for the final output,
-    // but eventually we might have depth/stencil attachments, or even other color
-    // attachments for other purposes.
-    let render_pass = {
-        let color_attachment = Attachment {
-            format: Some(surface_color_format),
-            samples: 1,
-            ops: AttachmentOps::new(AttachmentLoadOp::Clear, AttachmentStoreOp::Store),
-            stencil_ops: AttachmentOps::DONT_CARE,
-            layouts: Layout::Undefined..Layout::Present,
+    #[cfg(feature = "gl")]
+    let (mut adapters, mut surface) = {
+        let window = {
+            let builder =
+                back::config_context(back::glutin::ContextBuilder::new(), ColorFormat::SELF, None)
+                    .with_vsync(true);
+            back::glutin::GlWindow::new(wb, builder, &events_loop).unwrap()
         };
 
-        // A render pass could have multiple subpasses - but we're using one for now.
-        let subpass = SubpassDesc {
-            colors: &[(0, Layout::ColorAttachmentOptimal)],
+        let surface = back::Surface::from_window(window);
+        let adapters = surface.enumerate_adapters();
+        (adapters, surface)
+    };
+
+    for adapter in &adapters {
+        println!("{:?}", adapter.info);
+    }
+
+    let mut adapter = adapters.remove(0);
+    let memory_types = adapter.physical_device.memory_properties().memory_types;
+    let limits = adapter.physical_device.limits();
+
+    // Build a new device and associated command queues
+    let (device, mut queue_group) = adapter
+        .open_with::<_, hal::Graphics>(1, |family| surface.supports_queue_family(family))
+        .unwrap();
+
+    let mut command_pool = unsafe {
+        device.create_command_pool_typed(&queue_group, pool::CommandPoolCreateFlags::empty())
+    }
+        .expect("Can't create command pool");
+
+    // Setup renderpass and pipeline
+    let set_layout = unsafe {
+        device.create_descriptor_set_layout(
+            &[
+                pso::DescriptorSetLayoutBinding {
+                    binding: 0,
+                    ty: pso::DescriptorType::SampledImage,
+                    count: 1,
+                    stage_flags: ShaderStageFlags::FRAGMENT,
+                    immutable_samplers: false,
+                },
+                pso::DescriptorSetLayoutBinding {
+                    binding: 1,
+                    ty: pso::DescriptorType::Sampler,
+                    count: 1,
+                    stage_flags: ShaderStageFlags::FRAGMENT,
+                    immutable_samplers: false,
+                },
+            ],
+            &[],
+        )
+    }
+        .expect("Can't create descriptor set layout");
+
+    // Descriptors
+    let mut desc_pool = unsafe {
+        device.create_descriptor_pool(
+            1, // sets
+            &[
+                pso::DescriptorRangeDesc {
+                    ty: pso::DescriptorType::SampledImage,
+                    count: 1,
+                },
+                pso::DescriptorRangeDesc {
+                    ty: pso::DescriptorType::Sampler,
+                    count: 1,
+                },
+            ],
+        )
+    }
+        .expect("Can't create descriptor pool");
+    let desc_set = unsafe { desc_pool.allocate_set(&set_layout) }.unwrap();
+
+    // Buffer allocations
+    println!("Memory types: {:?}", memory_types);
+
+    let buffer_stride = std::mem::size_of::<Vertex>() as u64;
+    let buffer_len = QUAD.len() as u64 * buffer_stride;
+
+    assert_ne!(buffer_len, 0);
+    let mut vertex_buffer =
+        unsafe { device.create_buffer(buffer_len, buffer::Usage::VERTEX) }.unwrap();
+
+    let buffer_req = unsafe { device.get_buffer_requirements(&vertex_buffer) };
+
+    let upload_type = memory_types
+        .iter()
+        .enumerate()
+        .position(|(id, mem_type)| {
+            // type_mask is a bit field where each bit represents a memory type. If the bit is set
+            // to 1 it means we can use that type for our buffer. So this code finds the first
+            // memory type that has a `1` (or, is allowed), and is visible to the CPU.
+            buffer_req.type_mask & (1 << id) != 0
+                && mem_type.properties.contains(m::Properties::CPU_VISIBLE)
+        })
+        .unwrap()
+        .into();
+
+    let buffer_memory = unsafe { device.allocate_memory(upload_type, buffer_req.size) }.unwrap();
+
+    unsafe { device.bind_buffer_memory(&buffer_memory, 0, &mut vertex_buffer) }.unwrap();
+
+    // TODO: check transitions: read/write mapping and vertex buffer read
+    unsafe {
+        let mut vertices = device
+            .acquire_mapping_writer::<Vertex>(&buffer_memory, 0..buffer_req.size)
+            .unwrap();
+        vertices[0..QUAD.len()].copy_from_slice(&QUAD);
+        device.release_mapping_writer(vertices).unwrap();
+    }
+
+    // Image
+    let img_data = include_bytes!("../assets/img/logo.png");
+
+    let img = image::load(Cursor::new(&img_data[..]), image::PNG)
+        .unwrap()
+        .to_rgba();
+    let (width, height) = img.dimensions();
+    let kind = i::Kind::D2(width as i::Size, height as i::Size, 1, 1);
+    let row_alignment_mask = limits.min_buffer_copy_pitch_alignment as u32 - 1;
+    let image_stride = 4usize;
+    let row_pitch = (width * image_stride as u32 + row_alignment_mask) & !row_alignment_mask;
+    let upload_size = (height * row_pitch) as u64;
+
+    let mut image_upload_buffer =
+        unsafe { device.create_buffer(upload_size, buffer::Usage::TRANSFER_SRC) }.unwrap();
+    let image_mem_reqs = unsafe { device.get_buffer_requirements(&image_upload_buffer) };
+    let image_upload_memory =
+        unsafe { device.allocate_memory(upload_type, image_mem_reqs.size) }.unwrap();
+
+    unsafe { device.bind_buffer_memory(&image_upload_memory, 0, &mut image_upload_buffer) }
+        .unwrap();
+
+    // copy image data into staging buffer
+    unsafe {
+        let mut data = device
+            .acquire_mapping_writer::<u8>(&image_upload_memory, 0..image_mem_reqs.size)
+            .unwrap();
+        for y in 0..height as usize {
+            let row = &(*img)
+                [y * (width as usize) * image_stride..(y + 1) * (width as usize) * image_stride];
+            let dest_base = y * row_pitch as usize;
+            data[dest_base..dest_base + row.len()].copy_from_slice(row);
+        }
+        device.release_mapping_writer(data).unwrap();
+    }
+
+    let mut image_logo = unsafe {
+        device.create_image(
+            kind,
+            1,
+            ColorFormat::SELF,
+            i::Tiling::Optimal,
+            i::Usage::TRANSFER_DST | i::Usage::SAMPLED,
+            i::ViewCapabilities::empty(),
+        )
+    }
+        .unwrap(); // TODO: usage
+    let image_req = unsafe { device.get_image_requirements(&image_logo) };
+
+    let device_type = memory_types
+        .iter()
+        .enumerate()
+        .position(|(id, memory_type)| {
+            image_req.type_mask & (1 << id) != 0
+                && memory_type.properties.contains(m::Properties::DEVICE_LOCAL)
+        })
+        .unwrap()
+        .into();
+    let image_memory = unsafe { device.allocate_memory(device_type, image_req.size) }.unwrap();
+
+    unsafe { device.bind_image_memory(&image_memory, 0, &mut image_logo) }.unwrap();
+    let image_srv = unsafe {
+        device.create_image_view(
+            &image_logo,
+            i::ViewKind::D2,
+            ColorFormat::SELF,
+            Swizzle::NO,
+            COLOR_RANGE.clone(),
+        )
+    }
+        .unwrap();
+
+    let sampler = unsafe {
+        device.create_sampler(i::SamplerInfo::new(i::Filter::Linear, i::WrapMode::Clamp))
+    }
+        .expect("Can't create sampler");
+
+    unsafe {
+        device.write_descriptor_sets(vec![
+            pso::DescriptorSetWrite {
+                set: &desc_set,
+                binding: 0,
+                array_offset: 0,
+                descriptors: Some(pso::Descriptor::Image(&image_srv, i::Layout::Undefined)),
+            },
+            pso::DescriptorSetWrite {
+                set: &desc_set,
+                binding: 1,
+                array_offset: 0,
+                descriptors: Some(pso::Descriptor::Sampler(&sampler)),
+            },
+        ]);
+    }
+
+    let mut frame_semaphore = device.create_semaphore().expect("Can't create semaphore");
+    let mut frame_fence = device.create_fence(false).expect("Can't create fence"); // TODO: remove
+
+    // copy buffer to texture
+    unsafe {
+        let mut cmd_buffer = command_pool.acquire_command_buffer::<command::OneShot>();
+        cmd_buffer.begin();
+
+        let image_barrier = m::Barrier::Image {
+            states: (i::Access::empty(), i::Layout::Undefined)
+                ..(i::Access::TRANSFER_WRITE, i::Layout::TransferDstOptimal),
+            target: &image_logo,
+            families: None,
+            range: COLOR_RANGE.clone(),
+        };
+
+        cmd_buffer.pipeline_barrier(
+            PipelineStage::TOP_OF_PIPE..PipelineStage::TRANSFER,
+            m::Dependencies::empty(),
+            &[image_barrier],
+        );
+
+        cmd_buffer.copy_buffer_to_image(
+            &image_upload_buffer,
+            &image_logo,
+            i::Layout::TransferDstOptimal,
+            &[command::BufferImageCopy {
+                buffer_offset: 0,
+                buffer_width: row_pitch / (image_stride as u32),
+                buffer_height: height as u32,
+                image_layers: i::SubresourceLayers {
+                    aspects: f::Aspects::COLOR,
+                    level: 0,
+                    layers: 0..1,
+                },
+                image_offset: i::Offset { x: 0, y: 0, z: 0 },
+                image_extent: i::Extent {
+                    width,
+                    height,
+                    depth: 1,
+                },
+            }],
+        );
+
+        let image_barrier = m::Barrier::Image {
+            states: (i::Access::TRANSFER_WRITE, i::Layout::TransferDstOptimal)
+                ..(i::Access::SHADER_READ, i::Layout::ShaderReadOnlyOptimal),
+            target: &image_logo,
+            families: None,
+            range: COLOR_RANGE.clone(),
+        };
+        cmd_buffer.pipeline_barrier(
+            PipelineStage::TRANSFER..PipelineStage::FRAGMENT_SHADER,
+            m::Dependencies::empty(),
+            &[image_barrier],
+        );
+
+        cmd_buffer.finish();
+
+        queue_group.queues[0].submit_nosemaphores(Some(&cmd_buffer), Some(&mut frame_fence));
+
+        device
+            .wait_for_fence(&frame_fence, !0)
+            .expect("Can't wait for fence");
+    }
+
+    let (caps, formats, _present_modes, _composite_alphas) =
+        surface.compatibility(&mut adapter.physical_device);
+    println!("formats: {:?}", formats);
+    let format = formats.map_or(f::Format::Rgba8Srgb, |formats| {
+        formats
+            .iter()
+            .find(|format| format.base_format().1 == ChannelType::Srgb)
+            .map(|format| *format)
+            .unwrap_or(formats[0])
+    });
+
+    let swap_config = SwapchainConfig::from_caps(&caps, format, DIMS);
+    println!("{:?}", swap_config);
+    let extent = swap_config.extent.to_extent();
+
+    let (mut swap_chain, mut backbuffer) =
+        unsafe { device.create_swapchain(&mut surface, swap_config, None) }
+            .expect("Can't create swapchain");
+
+    let render_pass = {
+        let attachment = pass::Attachment {
+            format: Some(format),
+            samples: 1,
+            ops: pass::AttachmentOps::new(
+                pass::AttachmentLoadOp::Clear,
+                pass::AttachmentStoreOp::Store,
+            ),
+            stencil_ops: pass::AttachmentOps::DONT_CARE,
+            layouts: i::Layout::Undefined..i::Layout::Present,
+        };
+
+        let subpass = pass::SubpassDesc {
+            colors: &[(0, i::Layout::ColorAttachmentOptimal)],
             depth_stencil: None,
             inputs: &[],
             resolves: &[],
             preserves: &[],
         };
 
-        // This expresses the dependencies between subpasses. Again, we only have
-        // one subpass for now. Future tutorials may go into more detail.
-        let dependency = SubpassDependency {
-            passes: SubpassRef::External..SubpassRef::Pass(0),
+        let dependency = pass::SubpassDependency {
+            passes: pass::SubpassRef::External..pass::SubpassRef::Pass(0),
             stages: PipelineStage::COLOR_ATTACHMENT_OUTPUT..PipelineStage::COLOR_ATTACHMENT_OUTPUT,
-            accesses: Access::empty()
-                ..(Access::COLOR_ATTACHMENT_READ | Access::COLOR_ATTACHMENT_WRITE),
+            accesses: i::Access::empty()
+                ..(i::Access::COLOR_ATTACHMENT_READ | i::Access::COLOR_ATTACHMENT_WRITE),
         };
 
-        unsafe { device.create_render_pass(&[color_attachment], &[subpass], &[dependency]).unwrap() }
+        unsafe { device.create_render_pass(&[attachment], &[subpass], &[dependency]) }
+            .expect("Can't create render pass")
     };
-
-    // The pipeline layout defines the shape of the data you can send to a shader.
-    // This includes the number of uniforms and push constants. We don't need them
-    // for now.
-    let pipeline_layout = unsafe { device.create_pipeline_layout(&[], &[]).unwrap() };
-
-    // Shader modules are needed to create a pipeline definition.
-    // The shader is loaded from SPIR-V binary files.
-    let vertex_shader_module = {
-        let spirv = include_bytes!("../assets/gen/shaders/part00.vert.spv");
-        device.create_shader_module(spirv).unwrap()
-    };
-
-    let fragment_shader_module = {
-        let spirv = include_bytes!("../assets/gen/shaders/part00.frag.spv");
-        device.create_shader_module(spirv).unwrap()
-    };
-
-    // A pipeline object encodes almost all the state you need in order to draw
-    // geometry on screen. For now that's really only which shaders to use, what
-    // kind of blending to do, and what kind of primitives to draw.
-    let pipeline = {
-        let vs_entry = EntryPoint::<backend::Backend> {
-            entry: "main",
-            module: &vertex_shader_module,
-            specialization: Default::default(),
-        };
-
-        let fs_entry = EntryPoint::<backend::Backend> {
-            entry: "main",
-            module: &fragment_shader_module,
-            specialization: Default::default(),
-        };
-
-        let shader_entries = GraphicsShaderSet {
-            vertex: vs_entry,
-            hull: None,
-            domain: None,
-            geometry: None,
-            fragment: Some(fs_entry),
-        };
-
-        let subpass = Subpass {
-            index: 0,
-            main_pass: &render_pass,
-        };
-
-        let mut pipeline_desc = GraphicsPipelineDesc::new(
-            shader_entries,
-            Primitive::TriangleList,
-            Rasterizer::FILL,
-            &pipeline_layout,
-            subpass,
-        );
-
-        pipeline_desc
-            .blender
-            .targets
-            .push(ColorBlendDesc(ColorMask::ALL, BlendState::ALPHA));
-
-        unsafe {
-            device
-                .create_graphics_pipeline(&pipeline_desc, None)
-                .unwrap()
-        }
-    };
-
-    // Initialize our swapchain, images, framebuffers, etc.
-    // We expect to have to rebuild these when the window is resized -
-    // however we're going to ignore that for this example.
-
-    // A swapchain is effectively a chain of images (commonly two) that will be
-    // displayed to the screen. While one is being displayed, we can draw to one
-    // of the others.
-    //
-    // In a rare instance of the API creating resources for you, the backbuffer
-    // contains the actual images that make up the swapchain. We'll create image
-    // views and framebuffers from these next.
-    //
-    // We also want to store the swapchain's extent, which tells us how big each
-    // image is.
-    let swap_config = SwapchainConfig::from_caps(&caps, surface_color_format, DIMS);
-
-    let extent = swap_config.extent.to_extent();
-
-    let (mut swapchain, backbuffer) = unsafe { device.create_swapchain(&mut surface, swap_config, None).unwrap() };
-
-    // You can think of an image as just the raw binary of the literal image, with
-    // additional metadata about the format.
-    //
-    // Accessing the image must be done through an image view - which is more or
-    // less a sub-range of the base image. For example, it could be one 2D slice of
-    // a 3D texture. In many cases, the view will just be of the whole image. You
-    // can also use an image view to swizzle or reinterpret the image format, but
-    // we don't need to do any of this right now.
-    //
-    // Framebuffers bind certain image views to certain attachments. So for example,
-    // if your render pass requires one color, and one depth, attachment - the
-    // framebuffer chooses specific image views for each one.
-    //
-    // Here we create an image view and a framebuffer for each image in our
-    // swapchain.
-    let (frame_views, framebuffers) = match backbuffer {
+    let (mut frame_images, mut framebuffers) = match backbuffer {
         Backbuffer::Images(images) => {
-            let color_range = SubresourceRange {
-                aspects: Aspects::COLOR,
-                levels: 0..1,
-                layers: 0..1,
+            let pairs = images
+                .into_iter()
+                .map(|image| unsafe {
+                    let rtv = device
+                        .create_image_view(
+                            &image,
+                            i::ViewKind::D2,
+                            format,
+                            Swizzle::NO,
+                            COLOR_RANGE.clone(),
+                        )
+                        .unwrap();
+                    (image, rtv)
+                })
+                .collect::<Vec<_>>();
+            let fbos = pairs
+                .iter()
+                .map(|&(_, ref rtv)| unsafe {
+                    device
+                        .create_framebuffer(&render_pass, Some(rtv), extent)
+                        .unwrap()
+                })
+                .collect();
+            (pairs, fbos)
+        }
+        Backbuffer::Framebuffer(fbo) => (Vec::new(), vec![fbo]),
+    };
+
+    let pipeline_layout = unsafe {
+        device.create_pipeline_layout(
+            std::iter::once(&set_layout),
+            &[(pso::ShaderStageFlags::VERTEX, 0..8)],
+        )
+    }
+        .expect("Can't create pipeline layout");
+    let pipeline = {
+        let vs_module = {
+            let glsl = fs::read_to_string("assets/shaders/quad.vert").unwrap();
+            let spirv: Vec<u8> = glsl_to_spirv::compile(&glsl, glsl_to_spirv::ShaderType::Vertex)
+                .unwrap()
+                .bytes()
+                .map(|b| b.unwrap())
+                .collect();
+            unsafe { device.create_shader_module(&spirv) }.unwrap()
+        };
+        let fs_module = {
+            let glsl = fs::read_to_string("assets/shaders/quad.frag").unwrap();
+            let spirv: Vec<u8> = glsl_to_spirv::compile(&glsl, glsl_to_spirv::ShaderType::Fragment)
+                .unwrap()
+                .bytes()
+                .map(|b| b.unwrap())
+                .collect();
+            unsafe { device.create_shader_module(&spirv) }.unwrap()
+        };
+
+        let pipeline = {
+            let (vs_entry, fs_entry) = (
+                pso::EntryPoint {
+                    entry: ENTRY_NAME,
+                    module: &vs_module,
+                    specialization: pso::Specialization {
+                        constants: &[pso::SpecializationConstant { id: 0, range: 0..4 }],
+                        data: unsafe { std::mem::transmute::<&f32, &[u8; 4]>(&0.8f32) },
+                    },
+                },
+                pso::EntryPoint {
+                    entry: ENTRY_NAME,
+                    module: &fs_module,
+                    specialization: pso::Specialization::default(),
+                },
+            );
+
+            let shader_entries = pso::GraphicsShaderSet {
+                vertex: vs_entry,
+                hull: None,
+                domain: None,
+                geometry: None,
+                fragment: Some(fs_entry),
             };
 
-            let image_views = images
-                .iter()
-                .map(|image| unsafe {
-                    device
-                        .create_image_view(
-                            image,
-                            ViewKind::D2,
-                            surface_color_format,
-                            Swizzle::NO,
-                            color_range.clone(),
-                        ).unwrap()
-                }).collect::<Vec<_>>();
+            let subpass = Subpass {
+                index: 0,
+                main_pass: &render_pass,
+            };
 
-            let fbos = image_views
-                .iter()
-                .map(|image_view| unsafe {
-                    device
-                        .create_framebuffer(&render_pass, vec![image_view], extent)
-                        .unwrap()
-                }).collect();
+            let mut pipeline_desc = pso::GraphicsPipelineDesc::new(
+                shader_entries,
+                Primitive::TriangleList,
+                pso::Rasterizer::FILL,
+                &pipeline_layout,
+                subpass,
+            );
+            pipeline_desc.blender.targets.push(pso::ColorBlendDesc(
+                pso::ColorMask::ALL,
+                pso::BlendState::ALPHA,
+            ));
+            pipeline_desc.vertex_buffers.push(pso::VertexBufferDesc {
+                binding: 0,
+                stride: std::mem::size_of::<Vertex>() as u32,
+                rate: 0,
+            });
 
-            (image_views, fbos)
+            pipeline_desc.attributes.push(pso::AttributeDesc {
+                location: 0,
+                binding: 0,
+                element: pso::Element {
+                    format: f::Format::Rg32Float,
+                    offset: 0,
+                },
+            });
+            pipeline_desc.attributes.push(pso::AttributeDesc {
+                location: 1,
+                binding: 0,
+                element: pso::Element {
+                    format: f::Format::Rg32Float,
+                    offset: 8,
+                },
+            });
+
+            unsafe { device.create_graphics_pipeline(&pipeline_desc, None) }
+        };
+
+        unsafe {
+            device.destroy_shader_module(vs_module);
+        }
+        unsafe {
+            device.destroy_shader_module(fs_module);
         }
 
-        // This arm of the branch is currently only used by the OpenGL backend,
-        // which supplies an opaque framebuffer for you instead of giving you control
-        // over individual images.
-        Backbuffer::Framebuffer(fbo) => (vec![], vec![fbo]),
+        pipeline.unwrap()
     };
 
-    // The frame semaphore is used to allow us to wait for an image to be ready
-    // before attempting to draw on it,
+    // Rendering setup
+    let mut viewport = pso::Viewport {
+        rect: pso::Rect {
+            x: 0,
+            y: 0,
+            w: extent.width as _,
+            h: extent.height as _,
+        },
+        depth: 0.0..1.0,
+    };
+
     //
-    // The frame fence is used to to allow us to wait until our draw commands have
-    // finished before attempting to display the image.
-    let frame_semaphore = device.create_semaphore().unwrap();
-    let present_semaphore = device.create_semaphore().unwrap();
-
-    // Mainloop starts here
-    loop {
-        let mut quitting = false;
-
-        // If the window is closed, or Escape is pressed, quit
+    let mut running = true;
+    let mut recreate_swapchain = false;
+    let mut resize_dims = Extent2D {
+        width: 0,
+        height: 0,
+    };
+    while running {
         events_loop.poll_events(|event| {
-            if let Event::WindowEvent { event, .. } = event {
-                match event {
-                    WindowEvent::CloseRequested => quitting = true,
-                    WindowEvent::KeyboardInput {
+            if let winit::Event::WindowEvent { event, .. } = event {
+                #[allow(unused_variables)]
+                    match event {
+                    winit::WindowEvent::KeyboardInput {
                         input:
-                        KeyboardInput {
-                            virtual_keycode: Some(VirtualKeyCode::Escape),
+                        winit::KeyboardInput {
+                            virtual_keycode: Some(winit::VirtualKeyCode::Escape),
                             ..
                         },
                         ..
-                    } => quitting = true,
-                    _ => {}
+                    }
+                    | winit::WindowEvent::CloseRequested => running = false,
+                    winit::WindowEvent::Resized(dims) => {
+                        println!("resized to {:?}", dims);
+                        #[cfg(feature = "gl")]
+                            surface
+                            .get_window()
+                            .resize(dims.to_physical(surface.get_window().get_hidpi_factor()));
+                        recreate_swapchain = true;
+                        resize_dims.width = dims.width as u32;
+                        resize_dims.height = dims.height as u32;
+                    }
+                    _ => (),
                 }
             }
         });
 
-        if quitting {
-            break;
-        }
+        // Window was resized so we must recreate swapchain and framebuffers
+        if recreate_swapchain {
+            device.wait_idle().unwrap();
 
-        // Start rendering
+            let (caps, formats, _present_modes, _composite_alphas) =
+                surface.compatibility(&mut adapter.physical_device);
+            // Verify that previous format still exists so we may reuse it.
+            assert!(formats.iter().any(|fs| fs.contains(&format)));
 
-        command_pool.reset();
+            let swap_config = SwapchainConfig::from_caps(&caps, format, resize_dims);
+            println!("{:?}", swap_config);
+            let extent = swap_config.extent.to_extent();
 
-        // A swapchain contains multiple images - which one should we draw on? This
-        // returns the index of the image we'll use. The image may not be ready for
-        // rendering yet, but will signal frame_semaphore when it is.
-        let frame_index: SwapImageIndex = swapchain
-            .acquire_image(!0, FrameSync::Semaphore(&frame_semaphore))
-            .expect("Failed to acquire frame");
+            let (new_swap_chain, new_backbuffer) =
+                unsafe { device.create_swapchain(&mut surface, swap_config, Some(swap_chain)) }
+                    .expect("Can't create swapchain");
 
-        // We have to build a command buffer before we send it off to draw.
-        // We don't technically have to do this every frame, but if it needs to
-        // change every frame, then we do.
-        let finished_command_buffer = {
-            let mut command_buffer = command_pool.acquire_command_buffer();
-
-            // Define a rectangle on screen to draw into.
-            // In this case, the whole screen.
-            let viewport = Viewport {
-                rect: Rect {
-                    x: 0,
-                    y: 0,
-                    w: extent.width as i16,
-                    h: extent.height as i16,
-                },
-                depth: 0.0..1.0,
-            };
-
-            command_buffer.set_viewports(0, &[viewport.clone()]);
-            command_buffer.set_scissors(0, &[viewport.rect]);
-
-            // Choose a pipeline to use.
-            command_buffer.bind_graphics_pipeline(&pipeline);
-
-            {
-                // Clear the screen and begin the render pass.
-                let mut encoder = command_buffer.begin_render_pass_inline(
-                    &render_pass,
-                    &framebuffers[frame_index as usize],
-                    viewport.rect,
-                    &[ClearValue::Color(ClearColor::Float([0.0, 0.0, 0.0, 1.0]))],
-                );
-
-                // Draw some geometry! In this case 0..3 means that we're drawing
-                // the range of vertices from 0 to 3. We have no vertex buffer so
-                // this really just tells our shader to draw one triangle. The
-                // specific vertices to draw are encoded in the vertex shader which
-                // you can see in `source_assets/shaders/part00.vert`.
-                //
-                // The 0..1 is the range of instances to draw. It's not relevant
-                // unless you're using instanced rendering.
-                encoder.draw(0..3, 0..1);
+            unsafe {
+                // Clean up the old framebuffers, images and swapchain
+                for framebuffer in framebuffers {
+                    device.destroy_framebuffer(framebuffer);
+                }
+                for (_, rtv) in frame_images {
+                    device.destroy_image_view(rtv);
+                }
             }
 
-            // Finish building the command buffer - it's now ready to send to the
-            // GPU.
-            command_buffer.finish()
+            backbuffer = new_backbuffer;
+            swap_chain = new_swap_chain;
+
+            let (new_frame_images, new_framebuffers) = match backbuffer {
+                Backbuffer::Images(images) => {
+                    let pairs = images
+                        .into_iter()
+                        .map(|image| unsafe {
+                            let rtv = device
+                                .create_image_view(
+                                    &image,
+                                    i::ViewKind::D2,
+                                    format,
+                                    Swizzle::NO,
+                                    COLOR_RANGE.clone(),
+                                )
+                                .unwrap();
+                            (image, rtv)
+                        })
+                        .collect::<Vec<_>>();
+                    let fbos = pairs
+                        .iter()
+                        .map(|&(_, ref rtv)| unsafe {
+                            device
+                                .create_framebuffer(&render_pass, Some(rtv), extent)
+                                .unwrap()
+                        })
+                        .collect();
+                    (pairs, fbos)
+                }
+                Backbuffer::Framebuffer(fbo) => (Vec::new(), vec![fbo]),
+            };
+
+            framebuffers = new_framebuffers;
+            frame_images = new_frame_images;
+            viewport.rect.w = extent.width as _;
+            viewport.rect.h = extent.height as _;
+            recreate_swapchain = false;
+        }
+
+        let frame: hal::SwapImageIndex = unsafe {
+            device.reset_fence(&frame_fence).unwrap();
+            command_pool.reset();
+            match swap_chain.acquire_image(!0, FrameSync::Semaphore(&mut frame_semaphore)) {
+                Ok(i) => i,
+                Err(_) => {
+                    recreate_swapchain = true;
+                    continue;
+                }
+            }
         };
 
-        // This is what we submit to the command queue. We wait until frame_semaphore
-        // is signalled, at which point we know our chosen image is available to draw
-        // on.
-        let submission = Submission::new()
-            .wait_on(&[(&frame_semaphore, PipelineStage::BOTTOM_OF_PIPE)])
-            .signal(&[&present_semaphore])
-            .submit(vec![finished_command_buffer]);
+        // Rendering
+        let mut cmd_buffer = command_pool.acquire_command_buffer::<command::OneShot>();
+        unsafe {
+            cmd_buffer.begin();
 
-        // We submit the submission to one of our command queues, which will signal
-        // frame_fence once rendering is completed.
-        queue_group.queues[0].submit(submission, None);
+            cmd_buffer.set_viewports(0, &[viewport.clone()]);
+            cmd_buffer.set_scissors(0, &[viewport.rect]);
+            cmd_buffer.bind_graphics_pipeline(&pipeline);
+            cmd_buffer.bind_vertex_buffers(0, Some((&vertex_buffer, 0)));
+            cmd_buffer.bind_graphics_descriptor_sets(&pipeline_layout, 0, Some(&desc_set), &[]); //TODO
 
-        // We first wait for the rendering to complete...
-        // TODO: Fix up for semaphores
+            {
+                let mut encoder = cmd_buffer.begin_render_pass_inline(
+                    &render_pass,
+                    &framebuffers[frame as usize],
+                    viewport.rect,
+                    &[command::ClearValue::Color(command::ClearColor::Float([
+                        0.8, 0.8, 0.8, 1.0,
+                    ]))],
+                );
+                encoder.draw(0..6, 0..1);
+            }
 
-        // ...and then present the image on screen!
-        swapchain
-            .present(
-                &mut queue_group.queues[0],
-                frame_index,
-                vec![&present_semaphore],
-            ).expect("Present failed");
+            cmd_buffer.finish();
+
+            let submission = Submission {
+                command_buffers: Some(&cmd_buffer),
+                wait_semaphores: Some((&frame_semaphore, PipelineStage::BOTTOM_OF_PIPE)),
+                signal_semaphores: &[],
+            };
+            queue_group.queues[0].submit(submission, Some(&mut frame_fence));
+
+            // TODO: replace with semaphore
+            device.wait_for_fence(&frame_fence, !0).unwrap();
+            command_pool.free(Some(cmd_buffer));
+
+            // present frame
+            if let Err(_) = swap_chain.present_nosemaphores(&mut queue_group.queues[0], frame) {
+                recreate_swapchain = true;
+            }
+        }
     }
 
-    // Cleanup
-    device.destroy_graphics_pipeline(pipeline);
-    device.destroy_pipeline_layout(pipeline_layout);
+    // cleanup!
+    device.wait_idle().unwrap();
+    unsafe {
+        device.destroy_command_pool(command_pool.into_raw());
+        device.destroy_descriptor_pool(desc_pool);
+        device.destroy_descriptor_set_layout(set_layout);
 
-    for framebuffer in framebuffers {
-        device.destroy_framebuffer(framebuffer);
+        device.destroy_buffer(vertex_buffer);
+        device.destroy_buffer(image_upload_buffer);
+        device.destroy_image(image_logo);
+        device.destroy_image_view(image_srv);
+        device.destroy_sampler(sampler);
+        device.destroy_fence(frame_fence);
+        device.destroy_semaphore(frame_semaphore);
+        device.destroy_render_pass(render_pass);
+        device.free_memory(buffer_memory);
+        device.free_memory(image_memory);
+        device.free_memory(image_upload_memory);
+        device.destroy_graphics_pipeline(pipeline);
+        device.destroy_pipeline_layout(pipeline_layout);
+        for framebuffer in framebuffers {
+            device.destroy_framebuffer(framebuffer);
+        }
+        for (_, rtv) in frame_images {
+            device.destroy_image_view(rtv);
+        }
+
+        device.destroy_swapchain(swap_chain);
     }
+}
 
-    for image_view in frame_views {
-        device.destroy_image_view(image_view);
-    }
-
-    device.destroy_render_pass(render_pass);
-    device.destroy_swapchain(swapchain);
-
-    device.destroy_shader_module(vertex_shader_module);
-    device.destroy_shader_module(fragment_shader_module);
-    device.destroy_command_pool(command_pool.into_raw());
-
-    device.destroy_semaphore(frame_semaphore);
-    device.destroy_semaphore(present_semaphore);
+#[cfg(not(any(
+feature = "vulkan",
+feature = "dx12",
+feature = "metal",
+feature = "gl"
+)))]
+fn main() {
+    println!("You need to enable the native API feature (vulkan/metal) in order to test the LL");
 }
