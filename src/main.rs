@@ -89,19 +89,18 @@ impl app::AppState for VoxelTest {
         };
 
         // MOVE ELSEWHERE: Setup draw params
-//        let params = glium::DrawParameters {
-//            depth: glium::Depth {
-//                test: glium::DepthTest::IfLess,
-//                write: true,
-//                .. Default::default()
-//            },
-//            .. Default::default()
-//        };
-        let params = Default::default();
+        let params = glium::DrawParameters {
+            depth: glium::Depth {
+                test: glium::DepthTest::IfLess,
+                write: true,
+                .. Default::default()
+            },
+            .. Default::default()
+        };
 
         // Render the triangle
         let mut target = app.display.draw();
-        target.clear_color(0.0, 0.0, 1.0, 1.0);
+        target.clear_color_and_depth((0., 0., 1., 1.), 1.);
         target.draw(  // TODO: Add easy to use method for this
             &vertex_buffer,
             &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
