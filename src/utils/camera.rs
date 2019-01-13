@@ -152,33 +152,47 @@ impl CameraState {
         }
     }
 
-    pub fn process_input(&mut self, event: &glutin::WindowEvent) {
-        let input = match *event {
-            glutin::WindowEvent::KeyboardInput { input, .. } => {
-                // Get key state
-                let pressed = input.state == glutin::ElementState::Pressed;
-                let key = match input.virtual_keycode {
-                    Some(key) => key,
-                    None => return,
-                };
+    pub fn process_input(&mut self, event: &glutin::Event) {
+        match *event {
+            glutin::Event::WindowEvent { ref event, .. } => match *event {
+                glutin::WindowEvent::Resized(size) => {
+                    println!("resized {:?}", size);
+                    // Update aspect ratio
+                    self.aspect_ratio = (size.width / size.height) as f32
+                },
 
-                // Move camera
-                match key {
-                    glutin::VirtualKeyCode::E => self.moving_up = pressed,
-                    glutin::VirtualKeyCode::Q => self.moving_down = pressed,
-                    glutin::VirtualKeyCode::A => self.moving_left = pressed,
-                    glutin::VirtualKeyCode::D => self.moving_right = pressed,
-                    glutin::VirtualKeyCode::W => self.moving_forward = pressed,
-                    glutin::VirtualKeyCode::S => self.moving_backward = pressed,
-                    _ => (),
-                };
+                glutin::WindowEvent::KeyboardInput { ref input, .. } => {
+                    // Get key state
+                    let pressed = input.state == glutin::ElementState::Pressed;
+                    let key = match input.virtual_keycode {
+                        Some(key) => key,
+                        None => return,
+                    };
+
+                    // Move camera
+                    match key {
+                        glutin::VirtualKeyCode::E => self.moving_up = pressed,
+                        glutin::VirtualKeyCode::Q => self.moving_down = pressed,
+                        glutin::VirtualKeyCode::A => self.moving_left = pressed,
+                        glutin::VirtualKeyCode::D => self.moving_right = pressed,
+                        glutin::VirtualKeyCode::W => self.moving_forward = pressed,
+                        glutin::VirtualKeyCode::S => self.moving_backward = pressed,
+                        _ => (),
+                    };
+                },
+
+                _ => { }
             },
-            glutin::WindowEvent::Resized(size) => {
-                println!("resized {:?}", size);
-                // Update aspect ratio
-                self.aspect_ratio = (size.width / size.height) as f32
+
+            glutin::Event::DeviceEvent { ref event, .. } => match *event {
+                glutin::DeviceEvent::MouseMotion { delta } => {
+                    // TODO: Change pitch and yaw
+                },
+
+                _ => { }
             },
-            _ => return,
-        };
+
+            _ => { }
+        }
     }
 }
