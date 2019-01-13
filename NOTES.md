@@ -1,5 +1,6 @@
 
 ## Notes
+* gfx-rs intro tutorial: https://falseidolfactory.com/2018/08/16/gfx-hal-part-0-drawing-a-triangle.html
 * We operate in u32 integers for peak performance
     * Operations on signed integers are much slower, so we just define a center index and operate based off that
     * Dividing a negative integer by a positive one will give confusing results
@@ -9,3 +10,7 @@
 * Building for WASM
     * Make sure [cargo-web](https://github.com/koute/cargo-web) is installed
     * Run `cargo web build`
+    * There's a bug in the current verison of the compiler due to the chunk structure being too large to insert in to a hashmap
+
+## Requirements
+* Cmake (for glsl-to-spirv)

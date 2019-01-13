@@ -5,6 +5,13 @@ authors = ["NathanFlurry <github@nathanflurry.com>"]
 edition = "2018"
 
 [dependencies]
-kiss3d = "0.17.1"
-nalgebra = "0.16.13"
+winit = "0.18.1"
+gfx-hal = "0.1.0"
+gfx-backend-metal = "0.1.0"
+
 noise = "0.5.1"
+
+na = "0.16.6"  # TEMP:
+
+[build-dependencies]
+glsl-to-spirv = "0.1.7"
