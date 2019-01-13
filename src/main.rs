@@ -1,22 +1,18 @@
 #![cfg_attr(
-not(any(
-feature = "vulkan",
-feature = "dx12",
-feature = "metal",
-feature = "gl"
-)),
-allow(dead_code, unused_extern_crates, unused_imports)
+    not(any(
+        feature = "vulkan",
+        feature = "dx12",
+        feature = "metal",
+        feature = "gl"
+    )),
+    allow(dead_code, unused_extern_crates, unused_imports)
 )]
 
 extern crate env_logger;
-#[cfg(feature = "dx12")]
-extern crate gfx_backend_dx12 as back;
-#[cfg(feature = "gl")]
-extern crate gfx_backend_gl as back;
-#[cfg(feature = "metal")]
-extern crate gfx_backend_metal as back;
-#[cfg(feature = "vulkan")]
-extern crate gfx_backend_vulkan as back;
+#[cfg(feature = "dx12")] extern crate gfx_backend_dx12 as back;
+#[cfg(feature = "gl")] extern crate gfx_backend_gl as back;
+#[cfg(feature = "metal")] extern crate gfx_backend_metal as back;
+#[cfg(feature = "vulkan")] extern crate gfx_backend_vulkan as back;
 extern crate gfx_hal as hal;
 
 extern crate image;
@@ -26,12 +22,9 @@ use hal::format::{AsFormat, ChannelType, Rgba8Srgb as ColorFormat, Swizzle};
 use hal::pass::Subpass;
 use hal::pso::{PipelineStage, ShaderStageFlags};
 use hal::queue::Submission;
-use hal::{
-    buffer, command, format as f, image as i, memory as m, pass, pool, pso, window::Extent2D,
-};
+use hal::{buffer, command, format as f, image as i, memory as m, pass, pool, pso, window::Extent2D};
 use hal::{Backbuffer, DescriptorPool, FrameSync, Primitive, SwapchainConfig};
 use hal::{Device, Instance, PhysicalDevice, Surface, Swapchain};
-
 use std::fs;
 use std::io::{Cursor, Read};
 
@@ -64,12 +57,7 @@ const COLOR_RANGE: i::SubresourceRange = i::SubresourceRange {
     layers: 0..1,
 };
 
-#[cfg(any(
-feature = "vulkan",
-feature = "dx12",
-feature = "metal",
-feature = "gl"
-))]
+#[cfg(any(feature = "vulkan", feature = "dx12", feature = "metal", feature = "gl"))]
 fn main() {
     env_logger::init();
 
@@ -746,12 +734,7 @@ fn main() {
     }
 }
 
-#[cfg(not(any(
-feature = "vulkan",
-feature = "dx12",
-feature = "metal",
-feature = "gl"
-)))]
+#[cfg(not(any(feature = "vulkan", feature = "dx12", feature = "metal", feature = "gl")))]
 fn main() {
-    println!("You need to enable the native API feature (vulkan/metal) in order to test the LL");
+    panic!("You need to enable the native API feature (vulkan/metal) in order to test the LL");
 }
