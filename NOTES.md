@@ -11,6 +11,8 @@
     * Make sure [cargo-web](https://github.com/koute/cargo-web) is installed
     * Run `cargo web build`
     * There's a bug in the current verison of the compiler due to the chunk structure being too large to insert in to a hashmap
+* Will crash since `is_current` is false if macOS is still animating from one space to the actual game; need to report this error
+    * Can't seem to reproduce this
 
 ## Requirements
 * Cmake (for glsl-to-spirv)
