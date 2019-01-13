@@ -17,23 +17,43 @@ impl ProgramRegister {
                 140 => {
                     vertex: "
                         #version 140
-                        uniform mat4 matrix;
+
+                        uniform mat4 persp_matrix;
+                        uniform mat4 view_matrix;
+
                         in vec3 position;
+                        in vec3 normal;
                         in vec3 color;
-                        in vec2 uv;
-                        out vec3 vColor;
+
+                        // TODO: Add uv
+
+                        out vec3 v_position;
+                        out vec3 v_normal;
+                        out vec3 v_color;
+
                         void main() {
-                            gl_Position = vec4(position, 1.0) * matrix;
-                            vColor = color;
+                            v_position = position;
+                            v_normal = normal;
+                            v_color = color;
+                            gl_Position = persp_matrix * view_matrix * vec4(v_position * 0.005, 1.0);
                         }
                     ",
 
                     fragment: "
                         #version 140
-                        in vec3 vColor;
+
+                        in vec3 v_normal;
+                        in vec3 v_color;
+
                         out vec4 f_color;
+
+                        const vec3 LIGHT = vec3(-0.2, 0.8, 0.1);
+
                         void main() {
-                            f_color = vec4(vColor, 1.0);
+                            float lum = max(dot(normalize(v_normal), normalize(LIGHT)), 0.0);
+                            vec3 color = (0.3 + 0.7 * lum) * vec3(1.0, 1.0, 1.0);
+                            color *= v_color;
+                            f_color = vec4(color, 1.0);
                         }
                     "
                 }
@@ -46,14 +66,16 @@ impl ProgramRegister {
 struct Vertex {
     position: [f32; 3],
     color: [f32; 3],
+    normal: [f32; 3],
     uv: [f32; 2]
 }
 
-implement_vertex!(Vertex, position, color);
+implement_vertex!(Vertex, position, color, normal, uv);
 
 struct VoxelTest {
     program_register: ProgramRegister,
-    draw_params: glium::DrawParameters<'static>
+    draw_params: glium::DrawParameters<'static>,
+    camera: utils::CameraState
 }
 
 impl VoxelTest {
@@ -67,7 +89,8 @@ impl VoxelTest {
                     .. Default::default()
                 },
                 .. Default::default()
-            }
+            },
+            camera: utils::CameraState::new()
         }
     }
 }
@@ -82,13 +105,20 @@ impl app::AppState for VoxelTest {
         let vertex_buffer = glium::VertexBuffer::new(
             &app.display,
             &[
-                Vertex { position: [-0.5, -0.5, 0. ], color: [ 0.0, 1.0, 0.0 ], uv: [0., 0.,] },
-                Vertex { position: [ 0.0,  0.5, 0. ], color: [ 0.0, 0.0, 1.0 ], uv: [0., 1.] },
-                Vertex { position: [ 0.5, -0.5, 0. ], color: [ 1.0, 0.0, 0.0 ], uv: [1., 0.] },
+                Vertex { position: [-50., -50., 0.], color: [0.0, 1.0, 0.0], normal: [0., 1., 0.], uv: [0., 0.] },
+                Vertex { position: [ 0.0,  50., 0.], color: [0.0, 0.0, 1.0], normal: [0., 1., 0.], uv: [0., 1.] },
+                Vertex { position: [ 50., -50., 0.], color: [1.0, 0.0, 0.0], normal: [0., 1., 0.], uv: [1., 0.] },
             ]
         ).unwrap();
         let index_buffer = glium::IndexBuffer::new(&app.display, PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
+
+        // Update the camera
+        self.camera.update();
+
+        // Create uniforms
         let uniforms = uniform! {
+            persp_matrix: self.camera.get_perspective(),
+            view_matrix: self.camera.get_view(),
             matrix: [
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
