@@ -3,10 +3,12 @@ use std::f32;
 use std::cell::Ref;
 use crate::utils;
 
+type Point = (f32, f32, f32);
+
 pub struct CameraState {
     aspect_ratio: f32,
-    position: (f32, f32, f32),
-    direction: (f32, f32, f32),
+    position: Point,
+    direction: Point,
 
     moving_up: bool,
     moving_left: bool,
@@ -20,11 +22,11 @@ pub struct CameraState {
 }
 
 impl CameraState {
-    pub fn new() -> CameraState {
+    pub fn new(position: Point, direction: Point) -> CameraState {
         CameraState {
             aspect_ratio: 1024.0 / 768.0,
-            position: (0.1, 0.1, 1.0),
-            direction: (0.0, 0.0, -1.0),
+            position,
+            direction,
 
             moving_up: false,
             moving_left: false,
@@ -124,7 +126,7 @@ impl CameraState {
         // Move the camera
         if self.lock_cursor {
             // Calculate move speed
-            let move_speed = if self.moving_fast { 1.5 } else { 0.6 } * dt;
+            let move_speed = if self.moving_fast { 15. } else { 7.5 } * dt;
 
             // Normalize the direction
             let forward = {
@@ -238,7 +240,7 @@ impl CameraState {
                 glutin::DeviceEvent::MouseMotion { delta } => {
                     if !self.lock_cursor { return }
 
-                    let sensitivity = 0.002;
+                    let sensitivity = 0.0025;
 
                     // Calculate pitch and yaw
                     let (mut pitch, mut yaw) = self.get_pitch_yaw();
@@ -248,8 +250,7 @@ impl CameraState {
                     pitch -= delta.1 as f32 * sensitivity;
 
                     // Cap the pitch
-                    let pitch_boundary= f32::consts::FRAC_PI_2 - 0.01;
-                    let upper_bound = f32::consts::FRAC_PI_2 - 0.01;
+                    let pitch_boundary= f32::consts::FRAC_PI_2 - 0.0001;
                     if pitch > pitch_boundary {
                         pitch = pitch_boundary;
                     }

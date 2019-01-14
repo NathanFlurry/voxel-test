@@ -27,7 +27,7 @@ impl ProgramRegister {
                             v_position = position;
                             v_normal = normal;
                             v_color = color;
-                            gl_Position = persp_matrix * view_matrix * vec4(v_position * 0.005, 1.0);
+                            gl_Position = persp_matrix * view_matrix * vec4(v_position, 1.0);
                         }
                     ",
 
@@ -42,9 +42,14 @@ impl ProgramRegister {
                         const vec3 LIGHT = vec3(-0.2, 0.8, 0.1);
 
                         void main() {
+                            // Determine the lighting
                             float lum = max(dot(normalize(v_normal), normalize(LIGHT)), 0.0);
                             vec3 color = (0.3 + 0.7 * lum) * vec3(1.0, 1.0, 1.0);
+
+                            // Apply the vertex color
                             color *= v_color;
+
+                            // Get the fragment color
                             f_color = vec4(color, 1.0);
                         }
                     "

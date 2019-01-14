@@ -81,7 +81,7 @@ impl VoxelTest {
                 },
                 .. Default::default()
             },
-            camera: utils::CameraState::new(),
+            camera: utils::CameraState::new((32., 64., 32.), (0., 0., 1.)),
 
             world,
             meshes
