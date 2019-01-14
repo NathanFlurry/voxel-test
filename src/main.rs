@@ -113,7 +113,7 @@ impl app::AppState for VoxelTest {
         let index_buffer = glium::IndexBuffer::new(&app.display, PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
 
         // Update the camera
-        self.camera.update();
+        self.camera.update(app);
 
         // Create uniforms
         let uniforms = uniform! {

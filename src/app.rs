@@ -10,9 +10,41 @@ pub trait AppState {
     fn process_event(&mut self, event: glutin::Event);
 }
 
+struct AppInitData {
+    events_loop: glutin::EventsLoop
+}
+
+pub struct WindowState {
+    pub is_focused: bool,
+    pub is_closing: bool
+}
+
+impl WindowState {
+    fn process_event(&mut self, event: &glutin::Event) {
+        match *event {
+            glutin::Event::WindowEvent { ref event, .. } => match event {
+                glutin::WindowEvent::CloseRequested => self.is_closing = true,
+                glutin::WindowEvent::Focused(focused) => self.is_focused = *focused,
+                _ => { }
+            },
+            _ => { }
+        }
+    }
+}
+
+impl Default for WindowState {
+    fn default() -> WindowState {
+        WindowState {
+            is_focused: false,
+            is_closing: false
+        }
+    }
+}
+
 pub struct App {
-    events_loop: glutin::EventsLoop,
-    pub display: glium::Display
+    init_data: Option<AppInitData>,
+    pub display: glium::Display,
+    pub window_state: WindowState
 }
 
 impl App {
@@ -22,32 +54,37 @@ impl App {
 
         // Build display
         let window = glutin::WindowBuilder::new();
-        let context = glutin::ContextBuilder::new().with_depth_buffer(24);
+        let context = glutin::ContextBuilder::new().with_depth_buffer(24).with_vsync(true);
         let display = glium::Display::new(window, context, &events_loop).unwrap();
 
         App {
-            events_loop,
-            display
+            init_data: Some(AppInitData { events_loop }),
+            display,
+            window_state: WindowState::default()
         }
     }
 
     pub fn start(mut self, mut state: Box<AppState>) {
+        // Extract the init data from the app
+        let AppInitData { mut events_loop } = self.init_data.expect("Failed to get init data for app");
+        self.init_data = None;
+
         // Create clocks
         let mut accumulator = Duration::new(0, 0);
         let mut previous_clock = Instant::now();
 
         loop {
             // Process events
-            let mut should_stop = false;
-            self.events_loop.poll_events(|event| {
-                match event {
-                    glutin::Event::WindowEvent { event: glutin::WindowEvent::CloseRequested, .. } => should_stop = true,
-                    _ => state.process_event(event)
-                }
+            events_loop.poll_events(|event| {
+                // Process the event in the
+                self.window_state.process_event(&event);
+
+                // Send event to the state
+                state.process_event(event);
             });
 
             // Stop if needed
-            if should_stop {
+            if self.window_state.is_closing {
                 break;
             }
 

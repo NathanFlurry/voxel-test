@@ -1,5 +1,7 @@
 use glium::glutin;
 use std::f32;
+use std::cell::Ref;
+use crate::app;
 
 pub struct CameraState {
     aspect_ratio: f32,
@@ -12,7 +14,9 @@ pub struct CameraState {
     moving_right: bool,
     moving_forward: bool,
     moving_backward: bool,
-    moving_fast: bool
+    moving_fast: bool,
+
+    lock_cursor: bool
 }
 
 impl CameraState {
@@ -28,7 +32,9 @@ impl CameraState {
             moving_right: false,
             moving_forward: false,
             moving_backward: false,
-            moving_fast: false  // TODO: This
+            moving_fast: false,  // TODO: This
+
+            lock_cursor: false
         }
     }
 
@@ -108,7 +114,13 @@ impl CameraState {
         ]
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, app: &mut app::App) {
+        let window = app.display.gl_window();
+
+        // Grab/hide the mouse cursor
+        window.grab_cursor(self.lock_cursor);
+        window.hide_cursor(self.lock_cursor);
+
         let f = {
             let f = self.direction;
             let len = f.0 * f.0 + f.1 * f.1 + f.2 * f.2;
@@ -173,7 +185,6 @@ impl CameraState {
         match *event {
             glutin::Event::WindowEvent { ref event, .. } => match *event {
                 glutin::WindowEvent::Resized(size) => {
-                    println!("resized {:?}", size);
                     // Update aspect ratio
                     self.aspect_ratio = (size.width / size.height) as f32
                 },
@@ -194,23 +205,32 @@ impl CameraState {
                         glutin::VirtualKeyCode::D => self.moving_right = pressed,
                         glutin::VirtualKeyCode::W => self.moving_forward = pressed,
                         glutin::VirtualKeyCode::S => self.moving_backward = pressed,
-                        _ => (),
+                        glutin::VirtualKeyCode::LShift | glutin::VirtualKeyCode::RShift => self.moving_fast = pressed,
+
+                        glutin::VirtualKeyCode::Escape if pressed => self.lock_cursor = false,
+
+                        _ => { },
                     };
                 },
+
+                glutin::WindowEvent::Focused(focused) => {
+                    // Change the locked state of the cursor
+                    self.lock_cursor = focused
+                },
+
+                glutin::WindowEvent::MouseInput { .. } => self.lock_cursor = true,
 
                 _ => { }
             },
 
             glutin::Event::DeviceEvent { ref event, .. } => match *event {
                 glutin::DeviceEvent::MouseMotion { delta } => {
+                    if !self.lock_cursor { return }
+
                     let sensitivity = 0.002;
 
                     // Calculate pitch and yaw
                     let (mut pitch, mut yaw) = self.get_pitch_yaw();
-
-                    println!("dir {:?} -> {} {}", self.direction, pitch, yaw);
-
-//                    println!("before {} {}", pitch, yaw);
 
                     // Add the new movement
                     yaw += delta.0 as f32 * sensitivity;
@@ -228,10 +248,6 @@ impl CameraState {
 
                     // Set new direction
                     self.set_pitch_yaw(pitch, yaw);
-
-//                    let wsize = self.window.get_outer_size().unwrap();
-//                    self.mouse_pos = (wsize.0 as i32 / 2, wsize.1 as i32 / 2);
-//                    let _ = self.window.set_cursor_position(self.mouse_pos.0, self.mouse_pos.1);
                 },
 
                 _ => { }
