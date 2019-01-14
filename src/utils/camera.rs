@@ -114,70 +114,81 @@ impl CameraState {
         ]
     }
 
-    pub fn update(&mut self, app: &mut app::App) {
+    pub fn update(&mut self, app: &mut app::App, dt: f32) {
         let window = app.display.gl_window();
 
         // Grab/hide the mouse cursor
         window.grab_cursor(self.lock_cursor);
         window.hide_cursor(self.lock_cursor);
 
-        let f = {
-            let f = self.direction;
-            let len = f.0 * f.0 + f.1 * f.1 + f.2 * f.2;
-            let len = len.sqrt();
-            (f.0 / len, f.1 / len, f.2 / len)
-        };
+        // Move the camera
+        if self.lock_cursor {
+            // Calculate move speed
+            let move_speed = if self.moving_fast { 1.5 } else { 0.6 } * dt;
 
-        let up = (0.0, 1.0, 0.0);
+            // Normalize the direction
+            let forward = {
+                let f = self.direction;
+                let len = f.0 * f.0 + f.1 * f.1 + f.2 * f.2;
+                let len = len.sqrt();
+                (f.0 / len, f.1 / len, f.2 / len)
+            };
 
-        let s = (f.1 * up.2 - f.2 * up.1,
-                 f.2 * up.0 - f.0 * up.2,
-                 f.0 * up.1 - f.1 * up.0);
+            // Get up direction
+            let up = (0.0, 1.0, 0.0);
 
-        let s = {
-            let len = s.0 * s.0 + s.1 * s.1 + s.2 * s.2;
-            let len = len.sqrt();
-            (s.0 / len, s.1 / len, s.2 / len)
-        };
+            // Get cross product
+            let cross = (forward.1 * up.2 - forward.2 * up.1,
+                     forward.2 * up.0 - forward.0 * up.2,
+                     forward.0 * up.1 - forward.1 * up.0);
 
-        let u = (s.1 * f.2 - s.2 * f.1,
-                 s.2 * f.0 - s.0 * f.2,
-                 s.0 * f.1 - s.1 * f.0);
+            // Normalize result
+            let cross = {
+                let len = cross.0 * cross.0 + cross.1 * cross.1 + cross.2 * cross.2;
+                let len = len.sqrt();
+                (cross.0 / len, cross.1 / len, cross.2 / len)
+            };
 
-        if self.moving_up {
-            self.position.0 += u.0 * 0.01;
-            self.position.1 += u.1 * 0.01;
-            self.position.2 += u.2 * 0.01;
-        }
+            // Get the up direction
+            let up = (cross.1 * forward.2 - cross.2 * forward.1,
+                     cross.2 * forward.0 - cross.0 * forward.2,
+                     cross.0 * forward.1 - cross.1 * forward.0);
 
-        if self.moving_left {
-            self.position.0 -= s.0 * 0.01;
-            self.position.1 -= s.1 * 0.01;
-            self.position.2 -= s.2 * 0.01;
-        }
+            if self.moving_up {
+                self.position.0 += up.0 * move_speed;
+                self.position.1 += up.1 * move_speed;
+                self.position.2 += up.2 * move_speed;
+            }
 
-        if self.moving_down {
-            self.position.0 -= u.0 * 0.01;
-            self.position.1 -= u.1 * 0.01;
-            self.position.2 -= u.2 * 0.01;
-        }
+            if self.moving_left {
+                self.position.0 -= cross.0 * move_speed;
+                self.position.1 -= cross.1 * move_speed;
+                self.position.2 -= cross.2 * move_speed;
+            }
 
-        if self.moving_right {
-            self.position.0 += s.0 * 0.01;
-            self.position.1 += s.1 * 0.01;
-            self.position.2 += s.2 * 0.01;
-        }
+            if self.moving_down {
+                self.position.0 -= up.0 * move_speed;
+                self.position.1 -= up.1 * move_speed;
+                self.position.2 -= up.2 * move_speed;
+            }
 
-        if self.moving_forward {
-            self.position.0 += f.0 * 0.01;
-            self.position.1 += f.1 * 0.01;
-            self.position.2 += f.2 * 0.01;
-        }
+            if self.moving_right {
+                self.position.0 += cross.0 * move_speed;
+                self.position.1 += cross.1 * move_speed;
+                self.position.2 += cross.2 * move_speed;
+            }
 
-        if self.moving_backward {
-            self.position.0 -= f.0 * 0.01;
-            self.position.1 -= f.1 * 0.01;
-            self.position.2 -= f.2 * 0.01;
+            if self.moving_forward {
+                self.position.0 += forward.0 * move_speed;
+                self.position.1 += forward.1 * move_speed;
+                self.position.2 += forward.2 * move_speed;
+            }
+
+            if self.moving_backward {
+                self.position.0 -= forward.0 * move_speed;
+                self.position.1 -= forward.1 * move_speed;
+                self.position.2 -= forward.2 * move_speed;
+            }
         }
     }
 

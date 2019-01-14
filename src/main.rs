@@ -96,11 +96,11 @@ impl VoxelTest {
 }
 
 impl app::AppState for VoxelTest {
-    fn update(&mut self, app: &mut app::App) {
+    fn update(&mut self, app: &mut app::App, dt: f32) {
 
     }
 
-    fn render(&mut self, app: &mut app::App) {
+    fn render(&mut self, app: &mut app::App, dt: f32) {
         // MOVE ELSEWHERE: Create new triangle
         let vertex_buffer = glium::VertexBuffer::new(
             &app.display,
@@ -113,7 +113,7 @@ impl app::AppState for VoxelTest {
         let index_buffer = glium::IndexBuffer::new(&app.display, PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
 
         // Update the camera
-        self.camera.update(app);
+        self.camera.update(app, dt);
 
         // Create uniforms
         let uniforms = uniform! {

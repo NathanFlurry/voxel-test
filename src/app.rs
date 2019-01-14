@@ -3,10 +3,11 @@ use std::time::Instant;
 use std::thread;
 use glium::glutin;
 use glium::Surface;
+use crate::utils::AsFloatSecs;
 
 pub trait AppState {
-    fn update(&mut self, app: &mut App);
-    fn render(&mut self,  app: &mut App);
+    fn update(&mut self, app: &mut App, dt: f32);
+    fn render(&mut self,  app: &mut App, dt: f32);
     fn process_event(&mut self, event: glutin::Event);
 }
 
@@ -90,20 +91,22 @@ impl App {
 
             // Update the clock
             let now = Instant::now();
-            accumulator += now - previous_clock;
+            let dt = now - previous_clock;
+            accumulator += dt;
             previous_clock = now;
 
             // Update the accumulator
             let fixed_time_stamp = Duration::new(0, 16666667);
+            let fixed_time_stamp_float = fixed_time_stamp.as_float_secs() as f32;
             while accumulator >= fixed_time_stamp {
                 accumulator -= fixed_time_stamp;
 
                 // Update the game state
-                state.update(&mut self);
+                state.update(&mut self, fixed_time_stamp_float);
             }
 
             // Render
-            state.render(&mut self);
+            state.render(&mut self, dt.as_float_secs() as f32);
 
             // Wait for update
             thread::sleep(fixed_time_stamp - accumulator);
