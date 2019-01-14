@@ -1,7 +1,11 @@
-use crate::chunk::Chunk;
+pub mod block;
+pub mod chunk;
+pub mod procedural_world;
+
+use chunk::Chunk;
 use std::collections::HashMap;
-use crate::block::Block;
-use crate::chunk::ChunkBlockIndex;
+use block::Block;
+use chunk::ChunkBlockIndex;
 
 #[derive(Debug, Clone)]
 pub struct WorldBlockIndex {

@@ -1,6 +1,6 @@
-use crate::block::Block;
+use super::block::Block;
 use na::Point3;
-use crate::block::BlockSides;
+use super::block::BlockSides;
 use na::Point2;
 use na::Vector3;
 use crate::utils;
@@ -51,6 +51,16 @@ impl Chunk {
 
     pub fn set_block(&mut self, position: &ChunkBlockIndex, block: Block) {
         self.data[position.x][position.y][position.z] = block;
+    }
+}
+
+impl Chunk {
+    pub fn data(&self) -> &ChunkData {
+        &self.data
+    }
+
+    pub fn sides(&self) -> &BlockSidesData {
+        &self.sides
     }
 }
 
@@ -119,21 +129,6 @@ impl DeltaDir {
             DeltaDir::Negative => base.checked_sub(1),
             DeltaDir::Zero => Some(base),
             DeltaDir::Positive => base.checked_add(1)
-        }
-    }
-}
-
-/*** MESH GENERATION ***/
-impl Chunk {
-    // TODO: Add offset for the chunk
-    pub fn render(&self, vertices: &mut Vec<utils::Vertex>, faces: &mut Vec<Point3<u16>>, normals: &mut Vec<Vector3<f32>>, uvs: &mut Vec<Point2<f32>>) {
-        // Render each blocks
-        for x in 0..Chunk::SIZE_X {
-            for y in 0..Chunk::SIZE_Y {
-                for z in 0..Chunk::SIZE_Z {
-                    self.data[x][y][z].render(vertices, faces,  normals, uvs,x as f32, y as f32, z as f32, self.sides[x][y][z]);
-                }
-            }
         }
     }
 }

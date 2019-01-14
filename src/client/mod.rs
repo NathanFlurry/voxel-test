@@ -1,5 +1,6 @@
 mod cg;
 mod program_register;
+mod render;
 
 use crate::utils;
 use glium::{glutin, Surface};

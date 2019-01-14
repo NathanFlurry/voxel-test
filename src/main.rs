@@ -2,6 +2,7 @@
 
 mod client;
 mod utils;
+mod world;
 
 fn main() {
     let mut app = utils::App::new("Voxel Test");
