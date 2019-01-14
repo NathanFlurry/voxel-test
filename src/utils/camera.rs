@@ -140,21 +140,21 @@ impl CameraState {
             let up = (0.0, 1.0, 0.0);
 
             // Get cross product
-            let cross = (forward.1 * up.2 - forward.2 * up.1,
+            let side = (forward.1 * up.2 - forward.2 * up.1,
                      forward.2 * up.0 - forward.0 * up.2,
                      forward.0 * up.1 - forward.1 * up.0);
 
             // Normalize result
-            let cross = {
-                let len = cross.0 * cross.0 + cross.1 * cross.1 + cross.2 * cross.2;
+            let side = {
+                let len = side.0 * side.0 + side.1 * side.1 + side.2 * side.2;
                 let len = len.sqrt();
-                (cross.0 / len, cross.1 / len, cross.2 / len)
+                (side.0 / len, side.1 / len, side.2 / len)
             };
 
             // Get the up direction
-            let up = (cross.1 * forward.2 - cross.2 * forward.1,
-                     cross.2 * forward.0 - cross.0 * forward.2,
-                     cross.0 * forward.1 - cross.1 * forward.0);
+            let up = (side.1 * forward.2 - side.2 * forward.1,
+                     side.2 * forward.0 - side.0 * forward.2,
+                     side.0 * forward.1 - side.1 * forward.0);
 
             if self.moving_up {
                 self.position.0 += up.0 * move_speed;
@@ -163,9 +163,9 @@ impl CameraState {
             }
 
             if self.moving_left {
-                self.position.0 -= cross.0 * move_speed;
-                self.position.1 -= cross.1 * move_speed;
-                self.position.2 -= cross.2 * move_speed;
+                self.position.0 -= side.0 * move_speed;
+                self.position.1 -= side.1 * move_speed;
+                self.position.2 -= side.2 * move_speed;
             }
 
             if self.moving_down {
@@ -175,9 +175,9 @@ impl CameraState {
             }
 
             if self.moving_right {
-                self.position.0 += cross.0 * move_speed;
-                self.position.1 += cross.1 * move_speed;
-                self.position.2 += cross.2 * move_speed;
+                self.position.0 += side.0 * move_speed;
+                self.position.1 += side.1 * move_speed;
+                self.position.2 += side.2 * move_speed;
             }
 
             if self.moving_forward {
