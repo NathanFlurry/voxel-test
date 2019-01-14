@@ -1,6 +1,5 @@
-// From https://github.com/glium/glium/blob/master/examples/support/camera.rs
-
 use glium::glutin;
+use std::f32;
 
 pub struct CameraState {
     aspect_ratio: f32,
@@ -13,6 +12,7 @@ pub struct CameraState {
     moving_right: bool,
     moving_forward: bool,
     moving_backward: bool,
+    moving_fast: bool
 }
 
 impl CameraState {
@@ -21,12 +21,14 @@ impl CameraState {
             aspect_ratio: 1024.0 / 768.0,
             position: (0.1, 0.1, 1.0),
             direction: (0.0, 0.0, -1.0),
+
             moving_up: false,
             moving_left: false,
             moving_down: false,
             moving_right: false,
             moving_forward: false,
             moving_backward: false,
+            moving_fast: false  // TODO: This
         }
     }
 
@@ -38,8 +40,23 @@ impl CameraState {
         self.direction = dir;
     }
 
+    pub fn get_pitch_yaw(&self) -> (f32, f32) {  // See https://stackoverflow.com/a/33790309/2016800
+        (
+            self.direction.1.asin(),
+            self.direction.2.atan2(self.direction.0)
+        )
+    }
+
+    pub fn set_pitch_yaw(&mut self, pitch: f32, yaw: f32) {
+        self.direction = (
+            yaw.cos() * pitch.cos(),
+            pitch.sin(),
+            yaw.sin() * pitch.cos()
+        );
+    }
+
     pub fn get_perspective(&self) -> [[f32; 4]; 4] {
-        let fov: f32 = 3.141592 / 2.0;
+        let fov = f32::consts::FRAC_PI_2 / 2.0;
         let zfar = 1024.0;
         let znear = 0.1;
 
@@ -186,7 +203,35 @@ impl CameraState {
 
             glutin::Event::DeviceEvent { ref event, .. } => match *event {
                 glutin::DeviceEvent::MouseMotion { delta } => {
-                    // TODO: Change pitch and yaw
+                    let sensitivity = 0.002;
+
+                    // Calculate pitch and yaw
+                    let (mut pitch, mut yaw) = self.get_pitch_yaw();
+
+                    println!("dir {:?} -> {} {}", self.direction, pitch, yaw);
+
+//                    println!("before {} {}", pitch, yaw);
+
+                    // Add the new movement
+                    yaw += delta.0 as f32 * sensitivity;
+                    pitch -= delta.1 as f32 * sensitivity;
+
+                    // Cap the pitch
+                    let pitch_boundary= f32::consts::FRAC_PI_2 - 0.01;
+                    let upper_bound = f32::consts::FRAC_PI_2 - 0.01;
+                    if pitch > pitch_boundary {
+                        pitch = pitch_boundary;
+                    }
+                    if pitch < -pitch_boundary {
+                        pitch = -pitch_boundary;
+                    }
+
+                    // Set new direction
+                    self.set_pitch_yaw(pitch, yaw);
+
+//                    let wsize = self.window.get_outer_size().unwrap();
+//                    self.mouse_pos = (wsize.0 as i32 / 2, wsize.1 as i32 / 2);
+//                    let _ = self.window.set_cursor_position(self.mouse_pos.0, self.mouse_pos.1);
                 },
 
                 _ => { }
