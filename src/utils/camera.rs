@@ -1,7 +1,7 @@
 use glium::glutin;
 use std::f32;
 use std::cell::Ref;
-use crate::app;
+use crate::utils;
 
 pub struct CameraState {
     aspect_ratio: f32,
@@ -114,7 +114,7 @@ impl CameraState {
         ]
     }
 
-    pub fn update(&mut self, app: &mut app::App, dt: f32) {
+    pub fn update(&mut self, app: &mut utils::App, dt: f32) {
         let window = app.display.gl_window();
 
         // Grab/hide the mouse cursor

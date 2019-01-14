@@ -3,6 +3,7 @@ use na::Point3;
 use crate::block::BlockSides;
 use na::Point2;
 use na::Vector3;
+use crate::utils;
 
 #[derive(Debug)]
 pub struct ChunkBlockIndex {  // TODO: Remove all these unneeded structures
@@ -125,7 +126,7 @@ impl DeltaDir {
 /*** MESH GENERATION ***/
 impl Chunk {
     // TODO: Add offset for the chunk
-    pub fn render(&self, vertices: &mut Vec<Point3<f32>>, faces: &mut Vec<Point3<u16>>, normals: &mut Vec<Vector3<f32>>, uvs: &mut Vec<Point2<f32>>) {
+    pub fn render(&self, vertices: &mut Vec<utils::Vertex>, faces: &mut Vec<Point3<u16>>, normals: &mut Vec<Vector3<f32>>, uvs: &mut Vec<Point2<f32>>) {
         // Render each blocks
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
