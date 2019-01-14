@@ -151,7 +151,7 @@ impl VoxelTest {
 }
 
 fn main() {
-    let mut app = app::App::new();
+    let mut app = app::App::new("Voxel Test");
     let voxel_test = VoxelTest::new(&mut app);
     app.start(Box::new(voxel_test));
 }

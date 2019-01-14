@@ -49,12 +49,12 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> App {
+    pub fn new(title: &str) -> App {
         // Build events loop
         let mut events_loop = glutin::EventsLoop::new();
 
         // Build display
-        let window = glutin::WindowBuilder::new();
+        let window = glutin::WindowBuilder::new().with_title(title);
         let context = glutin::ContextBuilder::new().with_depth_buffer(24).with_vsync(true);
         let display = glium::Display::new(window, context, &events_loop).unwrap();
 
@@ -108,7 +108,7 @@ impl App {
                 state.update(&mut self, fixed_time_stamp_float);
             }
 
-            println!("dt {}", 1. / dt.as_float_secs());
+//            println!("dt {}", 1. / dt.as_float_secs());
 
             // Render
             state.render(&mut self, dt.as_float_secs() as f32);
