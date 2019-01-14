@@ -1,6 +1,6 @@
 use super::cg;
-use crate::world::block::Block;
-use crate::world::chunk::Chunk;
+use crate::world::Block;
+use crate::world::Chunk;
 
 impl Block {
     const SPRITESHEET_WIDTH: usize = 1024;

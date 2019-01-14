@@ -1,11 +1,9 @@
-pub mod block;
-pub mod chunk;
-pub mod procedural_world;
+mod block;
+mod chunk;
 
-use chunk::Chunk;
+pub use chunk::*;
+pub use block::*;
 use std::collections::HashMap;
-use block::Block;
-use chunk::ChunkBlockIndex;
 
 #[derive(Debug, Clone)]
 pub struct WorldBlockIndex {

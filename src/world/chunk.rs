@@ -75,7 +75,7 @@ impl Chunk {
         [ DeltaDir::Z,  DeltaDir::Z,  DeltaDir::N ]   // Bottom
     ];
 
-    pub fn process_sides(&mut self) -> () {
+    pub fn process_sides(&mut self) -> () {  // TODO: Rename this to `clean_sides` and make `process_sides_for_index` get called every time a block changes
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
                 for z in 0..Chunk::SIZE_Z {

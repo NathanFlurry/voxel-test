@@ -1,8 +1,8 @@
-use super::chunk::Chunk;
-use super::WorldDelegate;
-use super::chunk::ChunkBlockIndex;
-use super::block::Block;
-use super::ChunkIndex;
+use crate::world::Chunk;
+use crate::world::WorldDelegate;
+use crate::world::ChunkBlockIndex;
+use crate::world::Block;
+use crate::world::ChunkIndex;
 use noise::{NoiseFn, Seedable, MultiFractal};
 
 type NoiseType = noise::Fbm;
