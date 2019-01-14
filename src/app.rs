@@ -95,6 +95,9 @@ impl App {
             accumulator += dt;
             previous_clock = now;
 
+            // Start timer to see how long the update operations take
+            let before_update = Instant::now();
+
             // Update the accumulator
             let fixed_time_stamp = Duration::new(0, 16666667);
             let fixed_time_stamp_float = fixed_time_stamp.as_float_secs() as f32;
@@ -105,11 +108,24 @@ impl App {
                 state.update(&mut self, fixed_time_stamp_float);
             }
 
+            println!("dt {}", 1. / dt.as_float_secs());
+
             // Render
             state.render(&mut self, dt.as_float_secs() as f32);
 
+            // Calculate time the update took
+            let now = Instant::now();
+            let update_duration = now - before_update;
+
             // Wait for update
-            thread::sleep(fixed_time_stamp - accumulator);
+            let time_remaining = fixed_time_stamp - accumulator;
+            if time_remaining > update_duration {
+                // Sleep the amount of time until the next frame should be scheduled
+                thread::sleep(time_remaining - update_duration);
+            } else {
+                // The update took too long, so sleep for 0 ms to let the CPU do other things
+                thread::sleep_ms(0);
+            }
         }
     }
 }
