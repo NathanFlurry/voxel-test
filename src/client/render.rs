@@ -42,12 +42,12 @@ impl Block {
         [ 0., -1.,  0.],
     ];
 
-    const UVS: [[f32; 2]; 4] = [
-        [0., 0.],
-        [1., 0.],
-        [1., 1.],
-        [0., 1.],
-    ];
+//    const UVS: [[f32; 2]; 4] = [
+//        [0., 0.],
+//        [1., 0.],
+//        [1., 1.],
+//        [0., 1.],
+//    ];
 
     pub fn render(&self, vertices: &mut Vec<cg::Vertex>, x: f32, y: f32, z: f32, sides: u8) {
         // If the block is empty, do nothing

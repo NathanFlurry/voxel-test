@@ -47,32 +47,35 @@ impl VoxelTest {
                  &world::WorldBlockIndex::new(16 + radius, 16 + radius, 32 + radius)
         );
 
-        // Get the chunk and process the sides
-        let mut chunk = world.get_or_create_chunk(&world::ChunkIndex::new(0, 0, 0));
-        chunk.process_sides();
+        for chunk_x in 0..5 {
+            for chunk_y in 0..5 {
+                for chunk_z in 0..1 {
+                    // Get the chunk and process the sides
+                    let mut chunk = world.get_or_create_chunk(&world::ChunkIndex::new(chunk_x, chunk_y, 0));
+                    chunk.process_sides();
 
-        // Get chunk vertices
-        let mut vertices = Vec::new();
-        chunk.render(&mut vertices);
+                    // Get chunk vertices
+                    let mut vertices = Vec::new();
+                    chunk.render(&mut vertices);
 
-        // Add test triangle
-        let vertex_buffer = glium::VertexBuffer::new(
-            &app.display,
-            &[
-                cg::Vertex { position: [-50., -50., 0.], color: [0.0, 1.0, 0.0], normal: [0., 1., 0.], uv: [0., 0.] },
-                cg::Vertex { position: [ 0.0,  50., 0.], color: [0.0, 0.0, 1.0], normal: [0., 1., 0.], uv: [0., 1.] },
-                cg::Vertex { position: [ 50., -50., 0.], color: [1.0, 0.0, 0.0], normal: [0., 1., 0.], uv: [1., 0.] },
-            ]
-        ).unwrap();
-        let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
-        meshes.push(VoxelMesh::new(mat4_id(), vertex_buffer, None));
-
-        let y = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
-
-        // Create mesh
-        let vertex_buffer = glium::VertexBuffer::new(&app.display, &vertices[..]).unwrap();
-        let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
-        meshes.push(VoxelMesh::new(mat4_id(), vertex_buffer, None));
+                    // Create mesh
+                    let transform = [
+                        [1., 0., 0., 0.],
+                        [0., 1., 0., 0.],
+                        [0., 0., 1., 0.],
+                        [
+                            chunk_x as f32 * world::Chunk::SIZE_X as f32,
+                            chunk_z as f32 * world::Chunk::SIZE_Z as f32,  // Flip Y with Z
+                            chunk_y as f32 * world::Chunk::SIZE_Y as f32,  // Flip Z with Y
+                            1.
+                        ]
+                    ];
+                    let vertex_buffer = glium::VertexBuffer::new(&app.display, &vertices[..]).unwrap();
+                    let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
+                    meshes.push(VoxelMesh::new(transform, vertex_buffer, None));
+                }
+            }
+        }
 
         // Get the texture
         let image = image::load(Cursor::new(&include_bytes!("../../assets/img/spritesheet_tiles.png")[..]), image::PNG).unwrap().to_rgba();

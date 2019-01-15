@@ -27,7 +27,9 @@ impl WorldDelegate for ProceduralWorld {
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
                 // Sample the noise for the height
-                let height = (Chunk::SIZE_Z as f64 / 2.) +  self.noise.get([x as f64, y as f64]) * 10.;
+                let world_x = x + index.x as usize * Chunk::SIZE_X;
+                let world_y = y + index.y as usize * Chunk::SIZE_Y;
+                let height = (Chunk::SIZE_Z as f64 / 2.) +  self.noise.get([world_x as f64, world_y as f64]) * 10.;
 
                 // Cap the height and cast to usize
                 let height = height.max(0.).min(Chunk::SIZE_Z as f64) as usize;

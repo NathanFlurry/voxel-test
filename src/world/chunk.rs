@@ -94,6 +94,12 @@ impl Chunk {
 
                 // TODO: Need to check the next chunk over if it's at an edge
 
+                // HACK: Check if at edge of chunk
+                if dir[0].matches_side(x, Chunk::SIZE_X) || dir[1].matches_side(y, Chunk::SIZE_Y) || dir[2].matches_side(z, Chunk::SIZE_Z) {
+                    sides |= 1 << side;
+                    continue;
+                }
+
                 // Find the index to check and make sure it's in range
                 let dx = if let Some(x) = dir[0].checked_add_usize(x) { x } else { continue; };
                 let dy = if let Some(y) = dir[1].checked_add_usize(y) { y } else { continue; };
@@ -112,6 +118,7 @@ impl Chunk {
     }
 }
 
+#[derive(Eq, PartialEq)]
 enum DeltaDir {
     Negative, Zero, Positive
 }
@@ -127,5 +134,9 @@ impl DeltaDir {
             DeltaDir::Zero => Some(base),
             DeltaDir::Positive => base.checked_add(1)
         }
+    }
+
+    fn matches_side(&self, index: usize, max: usize) -> bool {
+        return (*self == DeltaDir::Negative && index == 0) || (*self == DeltaDir::Positive && index == max - 1);
     }
 }
