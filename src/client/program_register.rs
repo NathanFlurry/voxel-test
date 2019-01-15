@@ -16,17 +16,20 @@ impl ProgramRegister {
                         in vec3 position;
                         in vec3 normal;
                         in vec3 color;
+                        in vec2 uv;
 
                         // TODO: Add uv
 
                         out vec3 v_position;
                         out vec3 v_normal;
                         out vec3 v_color;
+                        out vec2 v_uv;
 
                         void main() {
                             v_position = position;
                             v_normal = normal;
                             v_color = color;
+                            v_uv = uv;
                             gl_Position = persp_matrix * view_matrix * vec4(v_position, 1.0);
                         }
                     ",
@@ -36,8 +39,11 @@ impl ProgramRegister {
 
                         in vec3 v_normal;
                         in vec3 v_color;
+                        in vec2 v_uv;
 
                         out vec4 f_color;
+
+                        uniform sampler2D tex;
 
                         const vec3 LIGHT = vec3(-0.2, 0.8, 0.1);
 
@@ -51,6 +57,9 @@ impl ProgramRegister {
 
                             // Get the fragment color
                             f_color = vec4(color, 1.0);
+
+                            // Apply the fragment color
+                            f_color *= texture(tex, v_uv);
                         }
                     "
                 }

@@ -55,7 +55,7 @@ impl Block {
 
         // Find UV coordinates
         let texture_pos = self.texture_pos();
-        let uv_lower = [texture_pos.0 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_X, texture_pos.1 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_Y];
+        let uv_lower = [texture_pos.0 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_X, 1. - texture_pos.1 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_Y - Block::SPRITESHEET_UV_TILE_SIZE_Y];
         let uv_upper = [uv_lower[0] + Block::SPRITESHEET_UV_TILE_SIZE_X, uv_lower[1] + Block::SPRITESHEET_UV_TILE_SIZE_Y];
         let uv_coords = [
             [uv_lower[0], uv_lower[1]],  // 0, 0
@@ -78,7 +78,7 @@ impl Block {
                     position[2] += y;  // Swap Z with Y
 
                     // Get the color
-                    let color = [1., 0., 0.];
+                    let color = [1., 1., 1.];
 
                     // Get normal
                     let normal = Block::NORMALS[side as usize];

@@ -1,4 +1,5 @@
 #[macro_use] extern crate glium;
+extern crate image;
 
 mod client;
 mod utils;

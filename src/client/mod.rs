@@ -6,6 +6,7 @@ mod render;
 use crate::utils;
 use glium::{glutin, Surface};
 use crate::world;
+use std::io::Cursor;
 
 pub struct VoxelMesh {
     vertex_buffer: glium::VertexBuffer<cg::Vertex>,
@@ -24,7 +25,8 @@ pub struct VoxelTest {
     camera: utils::CameraState,
 
     world: world::World,
-    meshes: Vec<VoxelMesh>
+    meshes: Vec<VoxelMesh>,
+    tile_texture: glium::texture::Texture2d
 }
 
 impl VoxelTest {
@@ -70,6 +72,12 @@ impl VoxelTest {
         let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
         meshes.push(VoxelMesh::new(vertex_buffer, None));
 
+        // Get t he texture
+        let image = image::load(Cursor::new(&include_bytes!("../../assets/img/spritesheet_tiles.png")[..]), image::PNG).unwrap().to_rgba();
+        let image_dimensions = image.dimensions();
+        let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture = glium::texture::Texture2d::new(&app.display, image).unwrap();
+
         // Create app
         VoxelTest {
             program_register: program_register::ProgramRegister::new(&app.display),
@@ -84,7 +92,8 @@ impl VoxelTest {
             camera: utils::CameraState::new((32., 64., 32.), (0., 0., 1.)),
 
             world,
-            meshes
+            meshes,
+            tile_texture: texture
         }
     }
 }
@@ -107,7 +116,8 @@ impl utils::AppState for VoxelTest {
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0f32]
-            ]
+            ],
+            tex: &self.tile_texture
         };
 
         // Render the triangle
