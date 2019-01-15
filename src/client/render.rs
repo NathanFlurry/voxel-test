@@ -2,6 +2,13 @@ use super::cg;
 use crate::world::Block;
 use crate::world::Chunk;
 
+/*
+AO Notes:
+* Need to have a bool for every side of a block; so BlockData<[u8; 6]> so there's a bitflag field for every side of a blcok
+    * Edge isn't the case b/c it shouldn't shade the vertex on a different face if it's at a corner
+
+*/
+
 impl Block {
     const SPRITESHEET_WIDTH: usize = 1024;
     const SPRITESHEET_HEIGHT: usize = 2048;
