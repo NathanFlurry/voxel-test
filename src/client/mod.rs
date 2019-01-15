@@ -87,6 +87,7 @@ impl VoxelTest {
                     write: true,
                     .. Default::default()
                 },
+                backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
                 .. Default::default()
             },
             camera: utils::CameraState::new([32., 64., 32.], [0., 0., 1.]),
@@ -122,7 +123,7 @@ impl utils::AppState for VoxelTest {
 
         // Render the triangle
         let mut target: glium::Frame = app.display.draw();
-        target.clear_color_and_depth((0., 0., 1., 1.), 1.);
+        target.clear_color_and_depth((0.623, 0.929, 0.988, 1.), 1.);
 
         for mesh in self.meshes.iter() {
             target.draw(
