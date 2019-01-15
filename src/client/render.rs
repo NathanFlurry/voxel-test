@@ -49,7 +49,7 @@ impl Block {
 //        [0., 1.],
 //    ];
 
-    pub fn render(&self, vertices: &mut Vec<cg::Vertex>, x: f32, y: f32, z: f32, sides: u8) {
+    pub fn render(&self, vertices: &mut Vec<cg::Vertex>, x: f32, y: f32, z: f32, sides: u8, corner_ao: u8) {
         // If the block is empty, do nothing
         if sides == 0b000000 { return; }
 
@@ -72,15 +72,17 @@ impl Block {
                 let face_index = &Block::FACES[side];
                 for &pos in &Block::FACE_ORDER {
                     // Get position
-                    let mut position = Block::VERTICES[face_index[pos]];
+                    let vertex_index = face_index[pos];
+                    let mut position = Block::VERTICES[vertex_index];
                     position[0] += x;
                     position[1] += z;  // Swap Y with Z
                     position[2] += y;  // Swap Z with Y
 
                     // Get the color
-                    let color = [1., 1., 1.];
-
-                    // Shade edge if (a) not flat and (b) no side adjacent side
+                    let shade_corner = corner_ao & (1 << vertex_index) != 0b000000;
+                    let darkness = 0.5;
+                    let color = if shade_corner { [0., 1., 0.] } else { [1., 1., 1.] };
+//                    let color = if shade_corner { [darkness, darkness, darkness] } else { [1., 1., 1.] };
 
                     // Get normal
                     let normal = Block::NORMALS[side as usize];
@@ -102,7 +104,7 @@ impl Chunk {
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
                 for z in 0..Chunk::SIZE_Z {
-                    self.data()[x][y][z].render(vertices, x as f32, y as f32, z as f32, self.sides()[x][y][z]);
+                    self.data()[x][y][z].render(vertices, x as f32, y as f32, z as f32, self.sides()[x][y][z], self.corner_ao()[x][y][z]);
                 }
             }
         }

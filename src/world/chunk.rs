@@ -61,6 +61,10 @@ impl Chunk {
     pub fn sides(&self) -> &BlockSidesData {
         &self.sides
     }
+
+    pub fn corner_ao(&self) -> &BlockCornerAOData {
+        &self.corner_ao
+    }
 }
 
 /*** SIDE PROCESSING ***/
@@ -74,13 +78,13 @@ impl Chunk {
         [DeltaDir::Z, DeltaDir::Z, DeltaDir::N]   // Bottom
     ];
 
-    const CORNER_DIRS: [[DeltaDir; 3]; 8] = [
+    const CORNER_DIRS: [[DeltaDir; 3]; 8] = [ // X and Y are flipped to reflect corresponding coords
         [DeltaDir::N, DeltaDir::N,  DeltaDir::N],  // 0: LBC
         [DeltaDir::P, DeltaDir::N,  DeltaDir::N],  // 1: RBC
-        [DeltaDir::P, DeltaDir::N,  DeltaDir::P],  // 2: RBF
-        [DeltaDir::N, DeltaDir::N,  DeltaDir::P],  // 3: LBF
-        [DeltaDir::N, DeltaDir::P,  DeltaDir::N],  // 4: LTC
-        [DeltaDir::P, DeltaDir::P,  DeltaDir::N],  // 5: RTC
+        [DeltaDir::P, DeltaDir::P,  DeltaDir::N],  // 2: RBF
+        [DeltaDir::N, DeltaDir::P,  DeltaDir::N],  // 3: LBF
+        [DeltaDir::N, DeltaDir::N,  DeltaDir::P],  // 4: LTC
+        [DeltaDir::P, DeltaDir::N,  DeltaDir::P],  // 5: RTC
         [DeltaDir::P, DeltaDir::P,  DeltaDir::P],  // 6: RTF
         [DeltaDir::N, DeltaDir::P,  DeltaDir::P]   // 7: LTF
     ];
@@ -123,12 +127,13 @@ impl Chunk {
                 let corner_dir = &Chunk::CORNER_DIRS[corner];
 
                 // Check the AO for each corner
-                for check_side_index in 0..2 {
+                for check_side_index in 0..4 {
                     // Get the delta for the side to check
                     let delta = match check_side_index {
-                        0 => [corner_dir[0], DeltaDir::Z,   DeltaDir::Z],
-                        1 => [DeltaDir::Z,   corner_dir[1], DeltaDir::Z],
-                        2 => [DeltaDir::Z,   DeltaDir::Z,   corner_dir[2]],
+                        0 => [corner_dir[0], corner_dir[1], corner_dir[2]],
+                        1 => [DeltaDir::Z,   corner_dir[1], corner_dir[2]],
+                        2 => [corner_dir[0], DeltaDir::Z,   corner_dir[2]],
+                        3 => [corner_dir[0], corner_dir[1], DeltaDir::Z],
                         _ => unreachable!()
                     };
 
@@ -145,6 +150,7 @@ impl Chunk {
 
         // Save the side data
         self.sides[x][y][z] = sides as u8;
+        self.corner_ao[x][y][z] = corner_ao as u8;
     }
 
     fn get_block_from_dir(&self, x: usize, y: usize, z: usize, dir: &[DeltaDir; 3]) -> Option<Block> {
