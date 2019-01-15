@@ -7,15 +7,17 @@ use crate::utils;
 use glium::{glutin, Surface};
 use crate::world;
 use std::io::Cursor;
+use vecmath::*;
 
 pub struct VoxelMesh {
+    model: Matrix4<f32>,
     vertex_buffer: glium::VertexBuffer<cg::Vertex>,
     index_buffer: Option<glium::IndexBuffer<u16>>
 }
 
 impl VoxelMesh {
-    pub fn new(vertex_buffer: glium::VertexBuffer<cg::Vertex>, index_buffer: Option<glium::IndexBuffer<u16>>) -> VoxelMesh {
-        VoxelMesh { vertex_buffer, index_buffer }
+    pub fn new(model: Matrix4<f32>, vertex_buffer: glium::VertexBuffer<cg::Vertex>, index_buffer: Option<glium::IndexBuffer<u16>>) -> VoxelMesh {
+        VoxelMesh { model, vertex_buffer, index_buffer }
     }
 }
 
@@ -63,16 +65,16 @@ impl VoxelTest {
             ]
         ).unwrap();
         let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
-        meshes.push(VoxelMesh::new(vertex_buffer, None));
+        meshes.push(VoxelMesh::new(mat4_id(), vertex_buffer, None));
 
         let y = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
 
         // Create mesh
         let vertex_buffer = glium::VertexBuffer::new(&app.display, &vertices[..]).unwrap();
         let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
-        meshes.push(VoxelMesh::new(vertex_buffer, None));
+        meshes.push(VoxelMesh::new(mat4_id(), vertex_buffer, None));
 
-        // Get t he texture
+        // Get the texture
         let image = image::load(Cursor::new(&include_bytes!("../../assets/img/spritesheet_tiles.png")[..]), image::PNG).unwrap().to_rgba();
         let image_dimensions = image.dimensions();
         let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
@@ -108,24 +110,20 @@ impl utils::AppState for VoxelTest {
         // Update the camera
         self.camera.update(app, dt);
 
-        // Create uniforms
-        let uniforms = uniform! {
-            persp_matrix: self.camera.get_perspective(),
-            view_matrix: self.camera.get_view(),
-            matrix: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0f32]
-            ],
-            tex: &self.tile_texture
-        };
-
         // Render the triangle
         let mut target: glium::Frame = app.display.draw();
         target.clear_color_and_depth((0.623, 0.929, 0.988, 1.), 1.);
 
         for mesh in self.meshes.iter() {
+            // Create uniforms
+            let uniforms = uniform! {
+                model_matrix: mesh.model,
+                view_matrix: self.camera.get_view(),
+                projection_matrix: self.camera.get_perspective(),
+                tex: &self.tile_texture
+            };
+
+            // Draw the mesh
             target.draw(
                 &mesh.vertex_buffer,
                 &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
