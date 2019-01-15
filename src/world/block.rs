@@ -1,7 +1,3 @@
-use na::Point3;
-use na::Point2;
-use na::Vector3;
-
 pub type BlockSides = u8;
 
 #[derive(Copy, Clone, Eq, PartialEq)]

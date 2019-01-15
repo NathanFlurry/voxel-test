@@ -1,8 +1,5 @@
 use super::block::Block;
-use na::Point3;
 use super::block::BlockSides;
-use na::Point2;
-use na::Vector3;
 use crate::utils;
 
 #[derive(Debug)]

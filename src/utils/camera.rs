@@ -2,13 +2,12 @@ use glium::glutin;
 use std::f32;
 use std::cell::Ref;
 use crate::utils;
-
-type Point = (f32, f32, f32);
+use vecmath::*;
 
 pub struct CameraState {
     aspect_ratio: f32,
-    position: Point,
-    direction: Point,
+    position: Vector3<f32>,
+    direction: Vector3<f32>,
 
     moving_up: bool,
     moving_left: bool,
@@ -22,7 +21,7 @@ pub struct CameraState {
 }
 
 impl CameraState {
-    pub fn new(position: Point, direction: Point) -> CameraState {
+    pub fn new(position: Vector3<f32>, direction: Vector3<f32>) -> CameraState {
         CameraState {
             aspect_ratio: 1024.0 / 768.0,
             position,
@@ -40,30 +39,30 @@ impl CameraState {
         }
     }
 
-    pub fn set_position(&mut self, pos: (f32, f32, f32)) {
+    pub fn set_position(&mut self, pos: Vector3<f32>) {
         self.position = pos;
     }
 
-    pub fn set_direction(&mut self, dir: (f32, f32, f32)) {
+    pub fn set_direction(&mut self, dir: Vector3<f32>) {
         self.direction = dir;
     }
 
     pub fn get_pitch_yaw(&self) -> (f32, f32) {  // See https://stackoverflow.com/a/33790309/2016800
         (
-            self.direction.1.asin(),
-            self.direction.2.atan2(self.direction.0)
+            self.direction[1].asin(),
+            self.direction[2].atan2(self.direction[0])
         )
     }
 
     pub fn set_pitch_yaw(&mut self, pitch: f32, yaw: f32) {
-        self.direction = (
+        self.direction = [
             yaw.cos() * pitch.cos(),
             pitch.sin(),
             yaw.sin() * pitch.cos()
-        );
+        ];
     }
 
-    pub fn get_perspective(&self) -> [[f32; 4]; 4] {
+    pub fn get_perspective(&self) -> Matrix4<f32> {
         let fov = f32::consts::FRAC_PI_2 / 2.0;
         let zfar = 1024.0;
         let znear = 0.1;
@@ -79,40 +78,29 @@ impl CameraState {
         ]
     }
 
-    pub fn get_view(&self) -> [[f32; 4]; 4] {
-        let f = {
-            let f = self.direction;
-            let len = f.0 * f.0 + f.1 * f.1 + f.2 * f.2;
-            let len = len.sqrt();
-            (f.0 / len, f.1 / len, f.2 / len)
-        };
+    pub fn get_view(&self) -> Matrix4<f32> {
+        let f = vec3_normalized(self.direction);
 
-        let up = (0.0, 1.0, 0.0);
+        let up = [0., 1., 0.];
 
-        let s = (f.1 * up.2 - f.2 * up.1,
-                 f.2 * up.0 - f.0 * up.2,
-                 f.0 * up.1 - f.1 * up.0);
+        let s = vec3_cross(f, up);
 
-        let s_norm = {
-            let len = s.0 * s.0 + s.1 * s.1 + s.2 * s.2;
-            let len = len.sqrt();
-            (s.0 / len, s.1 / len, s.2 / len)
-        };
+        let s_norm = vec3_normalized(s);
 
-        let u = (s_norm.1 * f.2 - s_norm.2 * f.1,
-                 s_norm.2 * f.0 - s_norm.0 * f.2,
-                 s_norm.0 * f.1 - s_norm.1 * f.0);
+        let u = vec3_cross(s_norm, f);
 
-        let p = (-self.position.0 * s.0 - self.position.1 * s.1 - self.position.2 * s.2,
-                 -self.position.0 * u.0 - self.position.1 * u.1 - self.position.2 * u.2,
-                 -self.position.0 * f.0 - self.position.1 * f.1 - self.position.2 * f.2);
+        let p = [
+            -self.position[0] * s[0] - self.position[1] * s[1] - self.position[2] * s[2],
+            -self.position[0] * u[0] - self.position[1] * u[1] - self.position[2] * u[2],
+            -self.position[0] * f[0] - self.position[1] * f[1] - self.position[2] * f[2]
+        ];
 
         // note: remember that this is column-major, so the lines of code are actually columns
         [
-            [s_norm.0, u.0, f.0, 0.0],
-            [s_norm.1, u.1, f.1, 0.0],
-            [s_norm.2, u.2, f.2, 0.0],
-            [p.0, p.1,  p.2, 1.0],
+            [s_norm[0], u[0], f[0], 0.0],
+            [s_norm[1], u[1], f[1], 0.0],
+            [s_norm[2], u[2], f[2], 0.0],
+            [p[0], p[1],  p[2], 1.0],
         ]
     }
 
@@ -129,67 +117,51 @@ impl CameraState {
             let move_speed = if self.moving_fast { 20. } else { 8.5 } * dt;
 
             // Normalize the direction
-            let forward = {
-                let f = self.direction;
-                let len = f.0 * f.0 + f.1 * f.1 + f.2 * f.2;
-                let len = len.sqrt();
-                (f.0 / len, f.1 / len, f.2 / len)
-            };
+            let forward = vec3_normalized(self.direction);
 
             // Get up direction
-            let up = (0.0, 1.0, 0.0);
+            let up = [0.0, 1.0, 0.0];
 
             // Get cross product
-            let side = (forward.1 * up.2 - forward.2 * up.1,
-                     forward.2 * up.0 - forward.0 * up.2,
-                     forward.0 * up.1 - forward.1 * up.0);
-
-            // Normalize result
-            let side = {
-                let len = side.0 * side.0 + side.1 * side.1 + side.2 * side.2;
-                let len = len.sqrt();
-                (side.0 / len, side.1 / len, side.2 / len)
-            };
+            let side = vec3_normalized(vec3_cross(forward, up));
 
             // Get the up direction
-            let up = (side.1 * forward.2 - side.2 * forward.1,
-                     side.2 * forward.0 - side.0 * forward.2,
-                     side.0 * forward.1 - side.1 * forward.0);
+            let up = vec3_cross(side, forward);
 
             if self.moving_up {
-                self.position.0 += up.0 * move_speed;
-                self.position.1 += up.1 * move_speed;
-                self.position.2 += up.2 * move_speed;
+                self.position[0] += up[0] * move_speed;
+                self.position[1] += up[1] * move_speed;
+                self.position[2] += up[2] * move_speed;
             }
 
             if self.moving_left {
-                self.position.0 -= side.0 * move_speed;
-                self.position.1 -= side.1 * move_speed;
-                self.position.2 -= side.2 * move_speed;
+                self.position[0] -= side[0] * move_speed;
+                self.position[1] -= side[1] * move_speed;
+                self.position[2] -= side[2] * move_speed;
             }
 
             if self.moving_down {
-                self.position.0 -= up.0 * move_speed;
-                self.position.1 -= up.1 * move_speed;
-                self.position.2 -= up.2 * move_speed;
+                self.position[0] -= up[0] * move_speed;
+                self.position[1] -= up[1] * move_speed;
+                self.position[2] -= up[2] * move_speed;
             }
 
             if self.moving_right {
-                self.position.0 += side.0 * move_speed;
-                self.position.1 += side.1 * move_speed;
-                self.position.2 += side.2 * move_speed;
+                self.position[0] += side[0] * move_speed;
+                self.position[1] += side[1] * move_speed;
+                self.position[2] += side[2] * move_speed;
             }
 
             if self.moving_forward {
-                self.position.0 += forward.0 * move_speed;
-                self.position.1 += forward.1 * move_speed;
-                self.position.2 += forward.2 * move_speed;
+                self.position[0] += forward[0] * move_speed;
+                self.position[1] += forward[1] * move_speed;
+                self.position[2] += forward[2] * move_speed;
             }
 
             if self.moving_backward {
-                self.position.0 -= forward.0 * move_speed;
-                self.position.1 -= forward.1 * move_speed;
-                self.position.2 -= forward.2 * move_speed;
+                self.position[0] -= forward[0] * move_speed;
+                self.position[1] -= forward[1] * move_speed;
+                self.position[2] -= forward[2] * move_speed;
             }
         }
     }

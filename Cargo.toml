@@ -5,8 +5,8 @@ authors = ["NathanFlurry <github@nathanflurry.com>"]
 edition = "2018"
 
 [dependencies]
-noise = "0.5.1"
-na = "0.16.6"  # TEMP:
+noise = "0.5"
+vecmath = "0.3"
 
-glium = "0.23.0"
-image = "0.21.0"
+glium = "0.23"
+image = "0.21"
