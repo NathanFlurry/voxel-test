@@ -1,4 +1,5 @@
 pub type BlockSides = u8;
+pub type BlockCornerAO = u8;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Block(u8);

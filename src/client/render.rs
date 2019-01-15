@@ -80,6 +80,8 @@ impl Block {
                     // Get the color
                     let color = [1., 1., 1.];
 
+                    // Shade edge if (a) not flat and (b) no side adjacent side
+
                     // Get normal
                     let normal = Block::NORMALS[side as usize];
 

@@ -1,5 +1,6 @@
-use super::block::Block;
-use super::block::BlockSides;
+use crate::world::block::Block;
+use crate::world::block::BlockSides;
+use crate::world::block::BlockCornerAO;
 use crate::utils;
 
 #[derive(Debug)]
@@ -16,15 +17,15 @@ impl ChunkBlockIndex {
     }
 }
 
-type ChunkData = BlockDataArray<Block>;
-
-type BlockSidesData = BlockDataArray<BlockSides>;
-
 type BlockDataArray<T> = [[[T; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X];
+type ChunkData = BlockDataArray<Block>;
+type BlockSidesData = BlockDataArray<BlockSides>;
+type BlockCornerAOData = BlockDataArray<BlockCornerAO>;
 
 pub struct Chunk {
     data: ChunkData,
-    sides: BlockSidesData
+    sides: BlockSidesData,
+    corner_ao: BlockCornerAOData
 }
 
 impl Chunk {
@@ -38,7 +39,8 @@ impl Chunk {
     pub fn empty() -> Chunk {
         Chunk {
             data: [[[Block::AIR; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
-            sides: [[[0b000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X]
+            sides: [[[0b000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
+            corner_ao: [[[0b00000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
         }
     }
 
@@ -64,12 +66,23 @@ impl Chunk {
 /*** SIDE PROCESSING ***/
 impl Chunk {
     const SIDE_DIRS: [[DeltaDir; 3]; 6] = [
-        [ DeltaDir::Z,  DeltaDir::N,  DeltaDir::Z ],  // Close
-        [ DeltaDir::Z,  DeltaDir::P,  DeltaDir::Z ],  // Far
-        [ DeltaDir::P,  DeltaDir::Z,  DeltaDir::Z ],  // Right
-        [ DeltaDir::N,  DeltaDir::Z,  DeltaDir::Z ],  // Left
-        [ DeltaDir::Z,  DeltaDir::Z,  DeltaDir::P ],  // Top
-        [ DeltaDir::Z,  DeltaDir::Z,  DeltaDir::N ]   // Bottom
+        [DeltaDir::Z, DeltaDir::N, DeltaDir::Z],  // Close
+        [DeltaDir::Z, DeltaDir::P, DeltaDir::Z],  // Far
+        [DeltaDir::P, DeltaDir::Z, DeltaDir::Z],  // Right
+        [DeltaDir::N, DeltaDir::Z, DeltaDir::Z],  // Left
+        [DeltaDir::Z, DeltaDir::Z, DeltaDir::P],  // Top
+        [DeltaDir::Z, DeltaDir::Z, DeltaDir::N]   // Bottom
+    ];
+
+    const CORNER_DIRS: [[DeltaDir; 3]; 8] = [
+        [DeltaDir::N, DeltaDir::N,  DeltaDir::N],  // 0: LBC
+        [DeltaDir::P, DeltaDir::N,  DeltaDir::N],  // 1: RBC
+        [DeltaDir::P, DeltaDir::N,  DeltaDir::P],  // 2: RBF
+        [DeltaDir::N, DeltaDir::N,  DeltaDir::P],  // 3: LBF
+        [DeltaDir::N, DeltaDir::P,  DeltaDir::N],  // 4: LTC
+        [DeltaDir::P, DeltaDir::P,  DeltaDir::N],  // 5: RTC
+        [DeltaDir::P, DeltaDir::P,  DeltaDir::P],  // 6: RTF
+        [DeltaDir::N, DeltaDir::P,  DeltaDir::P]   // 7: LTF
     ];
 
     pub fn process_sides(&mut self) -> () {  // TODO: Rename this to `clean_sides` and make `process_sides_for_index` get called every time a block changes
@@ -84,31 +97,48 @@ impl Chunk {
 
     fn process_sides_for_index(&mut self, x: usize, y: usize, z: usize) {
         let mut sides = 0b000000;
+        let mut corner_ao = 0b0000000;
 
         // Register the sides if the block is not invisible
         if !self.data[x][y][z].is_invisible() {
             // Check each side of the block
             for side in 0..6 {
-                // Get the direction to check
                 let dir = &Chunk::SIDE_DIRS[side];
 
-                // TODO: Need to check the next chunk over if it's at an edge
-
-                // HACK: Check if at edge of chunk
-                if dir[0].matches_side(x, Chunk::SIZE_X) || dir[1].matches_side(y, Chunk::SIZE_Y) || dir[2].matches_side(z, Chunk::SIZE_Z) {
+                if let Some(block) = self.get_block_from_dir(x, y, z, dir) {
+                    // Show the side if there is no visible block there
+                    if block.is_transparent() {
+                        sides |= 1 << side;
+                    }
+                } else {
+                    // TODO: Need to check the next chunk over if it's at an edge
+                    // HACK: Show the edge of the chunk by default so we don't have to check the
+                    // block in the next chunk over
                     sides |= 1 << side;
-                    continue;
                 }
+            }
 
-                // Find the index to check and make sure it's in range
-                let dx = if let Some(x) = dir[0].checked_add_usize(x) { x } else { continue; };
-                let dy = if let Some(y) = dir[1].checked_add_usize(y) { y } else { continue; };
-                let dz = if let Some(z) = dir[2].checked_add_usize(z) { z } else { continue; };
-                if dx >= Chunk::SIZE_X || dy >= Chunk::SIZE_Y || dz >= Chunk::SIZE_Z { continue; }
+            // Check all the edges on the block
+            'corner_loop: for corner in 0..8 {
+                let corner_dir = &Chunk::CORNER_DIRS[corner];
 
-                // Check if the block can be seen from the given side
-                if self.data[dx][dy][dz].is_transparent() {
-                    sides |= 1 << side;
+                // Check the AO for each corner
+                for check_side_index in 0..2 {
+                    // Get the delta for the side to check
+                    let delta = match check_side_index {
+                        0 => [corner_dir[0], DeltaDir::Z,   DeltaDir::Z],
+                        1 => [DeltaDir::Z,   corner_dir[1], DeltaDir::Z],
+                        2 => [DeltaDir::Z,   DeltaDir::Z,   corner_dir[2]],
+                        _ => unreachable!()
+                    };
+
+                    // Check the block
+                    if let Some(block) = self.get_block_from_dir(x, y, z, &delta) {
+                        if !block.is_transparent() {
+                            corner_ao |= 1 << corner;
+                            continue 'corner_loop;
+                        }
+                    }
                 }
             }
         }
@@ -116,9 +146,22 @@ impl Chunk {
         // Save the side data
         self.sides[x][y][z] = sides as u8;
     }
+
+    fn get_block_from_dir(&self, x: usize, y: usize, z: usize, dir: &[DeltaDir; 3]) -> Option<Block> {
+        // Get the new X, Y, and Z position
+        let dx = if let Some(x) = dir[0].checked_add_usize(x) { x } else { return None; };
+        let dy = if let Some(y) = dir[1].checked_add_usize(y) { y } else { return None; };
+        let dz = if let Some(z) = dir[2].checked_add_usize(z) { z } else { return None; };
+
+        // Check that the block is not outside of the chunk
+        if dx >= Chunk::SIZE_X || dy >= Chunk::SIZE_Y || dz >= Chunk::SIZE_Z { return None; }
+
+        // Return the block
+        Some(self.data[dx][dy][dz])
+    }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Copy, Clone)]
 enum DeltaDir {
     Negative, Zero, Positive
 }
@@ -138,5 +181,13 @@ impl DeltaDir {
 
     fn matches_side(&self, index: usize, max: usize) -> bool {
         return (*self == DeltaDir::Negative && index == 0) || (*self == DeltaDir::Positive && index == max - 1);
+    }
+
+    fn flip(&self) -> DeltaDir {
+        match self {
+            DeltaDir::Negative => DeltaDir::Positive,
+            DeltaDir::Zero => DeltaDir::Zero,
+            DeltaDir::Positive => DeltaDir::Negative
+        }
     }
 }
