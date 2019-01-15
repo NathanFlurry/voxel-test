@@ -126,7 +126,7 @@ impl CameraState {
         // Move the camera
         if self.lock_cursor {
             // Calculate move speed
-            let move_speed = if self.moving_fast { 15. } else { 7.5 } * dt;
+            let move_speed = if self.moving_fast { 20. } else { 8.5 } * dt;
 
             // Normalize the direction
             let forward = {
