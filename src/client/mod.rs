@@ -12,6 +12,7 @@ use vecmath::*;
 pub struct VoxelMesh {
     model: Matrix4<f32>,
     vertex_buffer: glium::VertexBuffer<cg::Vertex>,
+    #[allow(dead_code)]  // TODO: Remove
     index_buffer: Option<glium::IndexBuffer<u16>>
 }
 
@@ -26,6 +27,7 @@ pub struct VoxelTest {
     draw_params: glium::DrawParameters<'static>,
     camera: utils::CameraState,
 
+    #[allow(dead_code)]  // TODO: Remove
     world: world::World,
     meshes: Vec<VoxelMesh>,
     tile_texture: glium::texture::Texture2d
@@ -51,7 +53,7 @@ impl VoxelTest {
             for chunk_y in 0..5 {
                 for chunk_z in 0..1 {
                     // Get the chunk and process the sides
-                    let mut chunk = world.get_or_create_chunk(&world::ChunkIndex::new(chunk_x, chunk_y, 0));
+                    let chunk = world.get_or_create_chunk(&world::ChunkIndex::new(chunk_x, chunk_y, 0));
                     chunk.process_sides();
 
                     // Get chunk vertices
@@ -71,7 +73,7 @@ impl VoxelTest {
                         ]
                     ];
                     let vertex_buffer = glium::VertexBuffer::new(&app.display, &vertices[..]).unwrap();
-                    let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
+//                    let index_buffer = glium::IndexBuffer::new(&app.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
                     meshes.push(VoxelMesh::new(transform, vertex_buffer, None));
                 }
             }
@@ -105,7 +107,7 @@ impl VoxelTest {
 }
 
 impl utils::AppState for VoxelTest {
-    fn update(&mut self, app: &mut utils::App, dt: f32) {
+    fn update(&mut self, _app: &mut utils::App, _dt: f32) {
 
     }
 

@@ -1,6 +1,5 @@
 use glium::glutin;
 use std::f32;
-use std::cell::Ref;
 use crate::utils;
 use vecmath::*;
 
@@ -39,10 +38,12 @@ impl CameraState {
         }
     }
 
+    #[allow(dead_code)]  // TODO: Remove
     pub fn set_position(&mut self, pos: Vector3<f32>) {
         self.position = pos;
     }
 
+    #[allow(dead_code)]  // TODO: Remove
     pub fn set_direction(&mut self, dir: Vector3<f32>) {
         self.direction = dir;
     }
@@ -109,7 +110,7 @@ impl CameraState {
         let window = app.display.gl_window();
 
         // Grab/hide the mouse cursor
-        window.grab_cursor(self.lock_cursor);
+        window.grab_cursor(self.lock_cursor).unwrap();
         window.hide_cursor(self.lock_cursor);
 
         // Move the camera

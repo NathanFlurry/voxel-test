@@ -2,8 +2,7 @@ use std::time::Duration;
 use std::time::Instant;
 use std::thread;
 use glium::glutin;
-use glium::Surface;
-use crate::utils::AsFloatSecs;
+use crate::utils::AsFloatSeconds;
 
 pub trait AppState {
     fn update(&mut self, app: &mut App, dt: f32);
@@ -51,7 +50,7 @@ pub struct App {
 impl App {
     pub fn new(title: &str) -> App {
         // Build events loop
-        let mut events_loop = glutin::EventsLoop::new();
+        let events_loop = glutin::EventsLoop::new();
 
         // Build display
         let window = glutin::WindowBuilder::new().with_title(title);
@@ -100,7 +99,7 @@ impl App {
 
             // Update the accumulator
             let fixed_time_stamp = Duration::new(0, 16666667);
-            let fixed_time_stamp_float = fixed_time_stamp.as_float_secs() as f32;
+            let fixed_time_stamp_float = fixed_time_stamp.as_float_seconds() as f32;
             while accumulator >= fixed_time_stamp {
                 accumulator -= fixed_time_stamp;
 
@@ -108,10 +107,10 @@ impl App {
                 state.update(&mut self, fixed_time_stamp_float);
             }
 
-//            println!("dt {}", 1. / dt.as_float_secs());
+//            println!("dt {}", 1. / dt.as_float_seconds());
 
             // Render
-            state.render(&mut self, dt.as_float_secs() as f32);
+            state.render(&mut self, dt.as_float_seconds() as f32);
 
             // Calculate time the update took
             let now = Instant::now();
@@ -124,7 +123,7 @@ impl App {
                 thread::sleep(time_remaining - update_duration);
             } else {
                 // The update took too long, so sleep for 0 ms to let the CPU do other things
-                thread::sleep_ms(0);
+                thread::sleep(Duration::new(0, 0));
             }
         }
     }

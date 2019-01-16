@@ -79,7 +79,6 @@ impl Block {
         ];
 
         // Add the vertices
-        let start_vert_count = vertices.len();
         for side in 0..6 {
             if sides & (1 << side) != 0b000000 {
                 // Add the vert data

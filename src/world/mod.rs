@@ -58,6 +58,7 @@ pub struct World {
 }
 
 impl World {
+    #[allow(dead_code)]  // TODO: Remove
     pub const WORLD_CENTER_INDEX: u32 = 2147483648;  // (2 ^ 32) / 2
 
     pub fn new(delegate: Box<WorldDelegate>) -> World {
@@ -104,11 +105,10 @@ impl World {
             for y in lower.y..=upper.y {
                 for z in lower.z..=upper.z {
                     // Get ellipsoid distance from the center
-                    let dist = (
+                    let dist =
                         ((x as f64 - cx as f64) / rx).powi(2) +
-                            ((y as f64 - cy as f64) / ry).powi(2) +
-                            ((z as f64 - cz as f64) / rz).powi(2)
-                    );
+                        ((y as f64 - cy as f64) / ry).powi(2) +
+                        ((z as f64 - cz as f64) / rz).powi(2);
 
                     // Check if distance is within ellipsoid
                     if dist <= 1. {

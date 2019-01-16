@@ -1,7 +1,6 @@
 use crate::world::block::Block;
 use crate::world::block::BlockSides;
 use crate::world::block::BlockEdges;
-use crate::utils;
 use crate::world::block::BlockCorners;
 
 #[derive(Debug)]
@@ -51,7 +50,7 @@ impl Chunk {
             corners: Box::new([[[0b0000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X])
         }
     }
-
+    #[allow(dead_code)] // TODO: Remove
     pub fn get_block(&self, position: &ChunkBlockIndex) -> &Block {
         &self.data[position.x][position.y][position.z]
     }
@@ -206,39 +205,11 @@ enum DeltaDir {
 }
 
 impl DeltaDir {
-    pub const N: DeltaDir = DeltaDir::Negative;
-    pub const Z: DeltaDir = DeltaDir::Zero;
-    pub const P: DeltaDir = DeltaDir::Positive;
-
     fn checked_add_usize(&self, base: usize) -> Option<usize> {
         match self {
             DeltaDir::Negative => base.checked_sub(1),
             DeltaDir::Zero => Some(base),
             DeltaDir::Positive => base.checked_add(1)
-        }
-    }
-
-    fn matches_side(&self, index: usize, max: usize) -> bool {
-        return (*self == DeltaDir::Negative && index == 0) || (*self == DeltaDir::Positive && index == max - 1);
-    }
-
-    fn flip(&self) -> DeltaDir {
-        match self {
-            DeltaDir::Negative => DeltaDir::Positive,
-            DeltaDir::Zero => DeltaDir::Zero,
-            DeltaDir::Positive => DeltaDir::Negative
-        }
-    }
-
-    fn merge_dirs(base: &[DeltaDir; 3], merge: &[DeltaDir; 2]) -> [DeltaDir; 3] {
-        if base[0] != DeltaDir::Zero {
-            [base[0], merge[0], merge[1]]
-        } else if base[1] != DeltaDir::Zero {
-            [merge[0], base[1], merge[1]]
-        } else if base[2] != DeltaDir::Zero {
-            [merge[0], merge[1], base[1]]
-        } else {
-            panic!("Base is all zero");
         }
     }
 }
