@@ -85,11 +85,11 @@ impl Block {
                 uv_lower[0] + Block::UV_TILE_SIZE_X,
                 uv_lower[1] + Block::UV_TILE_SIZE_Y
             ];
-            let uv_coords = [
-                [uv_lower[0], uv_lower[1]],  // 0, 0
-                [uv_upper[0], uv_lower[1]],  // 1, 0
+            let uv_coords = [  // Flip the Y coords on these so the side of the blocks show the right dir
                 [uv_upper[0], uv_upper[1]],  // 1, 1
                 [uv_lower[0], uv_upper[1]],  // 0, 1
+                [uv_lower[0], uv_lower[1]],  // 0, 0
+                [uv_upper[0], uv_lower[1]],  // 1, 0
             ];
 
             // Add the vert data
