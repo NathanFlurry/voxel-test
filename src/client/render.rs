@@ -5,9 +5,12 @@ use crate::world::Chunk;
 impl Block {
     const SPRITESHEET_WIDTH: usize = 1024;
     const SPRITESHEET_HEIGHT: usize = 2048;
-    const SPRITESHEET_TILE_SIZE: usize = 128;
-    const SPRITESHEET_UV_TILE_SIZE_X: f32 = Block::SPRITESHEET_TILE_SIZE as f32 / Block::SPRITESHEET_WIDTH as f32;
-    const SPRITESHEET_UV_TILE_SIZE_Y: f32 = Block::SPRITESHEET_TILE_SIZE as f32 / Block::SPRITESHEET_HEIGHT as f32;
+    const TILE_SIZE: usize = 128;
+    const TILE_SIZE_PADDED: usize = 130;
+    const UV_TILE_SIZE_X: f32 = Block::TILE_SIZE as f32 / Block::SPRITESHEET_WIDTH as f32;
+    const UV_TILE_SIZE_Y: f32 = Block::TILE_SIZE as f32 / Block::SPRITESHEET_HEIGHT as f32;
+    const UV_TILE_SIZE_PADDED_X: f32 = Block::TILE_SIZE_PADDED as f32 / Block::SPRITESHEET_WIDTH as f32;
+    const UV_TILE_SIZE_PADDED_Y: f32 = Block::TILE_SIZE_PADDED as f32 / Block::SPRITESHEET_HEIGHT as f32;
 
     const FACES: [[usize; 4]; 6] = [
         [5, 4, 0, 1],  // Close;   RTC, LTC, LBC, RBC
@@ -67,47 +70,53 @@ impl Block {
         // If the block is empty, do nothing
         if sides == 0b000000 { return; }
 
-        // Find UV coordinates
-        let texture_pos = self.texture_pos();
-        let uv_lower = [texture_pos.0 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_X, 1. - texture_pos.1 as f32 * Block::SPRITESHEET_UV_TILE_SIZE_Y - Block::SPRITESHEET_UV_TILE_SIZE_Y];
-        let uv_upper = [uv_lower[0] + Block::SPRITESHEET_UV_TILE_SIZE_X, uv_lower[1] + Block::SPRITESHEET_UV_TILE_SIZE_Y];
-        let uv_coords = [
-            [uv_lower[0], uv_lower[1]],  // 0, 0
-            [uv_upper[0], uv_lower[1]],  // 1, 0
-            [uv_upper[0], uv_upper[1]],  // 1, 1
-            [uv_lower[0], uv_upper[1]],  // 0, 1
-        ];
-
         // Add the vertices
         for side in 0..6 {
-            if sides & (1 << side) != 0b000000 {
-                // Add the vert data
-                let face_index = &Block::FACES[side];
-                for &pos in &Block::FACE_ORDER {
-                    // Get position
-                    let vertex_index = face_index[pos];  // Also used as the corner index
-                    let mut position = Block::VERTICES[vertex_index];
-                    position[0] += x;
-                    position[1] += z;  // Swap Y with Z
-                    position[2] += y;  // Swap Z with Y
+            // Make sure the side is visible
+            if sides & (1 << side) == 0b000000 { continue; }
 
-                    // Get the color
-                    let has_edge_a = edges & (1 << Block::FACE_EDGES[side][pos]) != 0;
-                    let has_edge_b = edges & (1 << Block::FACE_EDGES[side][(pos + 1) % 4]) != 0;
-                    let has_corner = corners & (1 << vertex_index) != 0;
-                    let shade_corner = !has_edge_a || !has_edge_b || !has_corner;
-                    let darkness = 0.5;
-//                    let color = if shade_corner { [0., 1., 0.] } else { [1., 1., 1.] };
-                    let color = if shade_corner { [darkness, darkness, darkness] } else { [1., 1., 1.] };
+            // Calculate UV coordinates for the face
+            let texture_pos = self.texture_pos(side);
+            let uv_lower = [
+                texture_pos.0 as f32 * Block::UV_TILE_SIZE_PADDED_X,
+                1. - texture_pos.1 as f32 * Block::UV_TILE_SIZE_PADDED_Y - Block::UV_TILE_SIZE_Y
+            ];
+            let uv_upper = [
+                uv_lower[0] + Block::UV_TILE_SIZE_X,
+                uv_lower[1] + Block::UV_TILE_SIZE_Y
+            ];
+            let uv_coords = [
+                [uv_lower[0], uv_lower[1]],  // 0, 0
+                [uv_upper[0], uv_lower[1]],  // 1, 0
+                [uv_upper[0], uv_upper[1]],  // 1, 1
+                [uv_lower[0], uv_upper[1]],  // 0, 1
+            ];
 
-                    // Get normal
-                    let normal = Block::NORMALS[side as usize];
+            // Add the vert data
+            let face_index = &Block::FACES[side];
+            for &pos in &Block::FACE_ORDER {
+                // Get position
+                let vertex_index = face_index[pos];  // Also used as the corner index
+                let mut position = Block::VERTICES[vertex_index];
+                position[0] += x;
+                position[1] += z;  // Swap Y with Z
+                position[2] += y;  // Swap Z with Y
 
-                    // Get UV coords
-                    let uv = uv_coords[pos];
+                // Get the color
+                let has_edge_a = edges & (1 << Block::FACE_EDGES[side][pos]) != 0;
+                let has_edge_b = edges & (1 << Block::FACE_EDGES[side][(pos + 1) % 4]) != 0;
+                let has_corner = corners & (1 << vertex_index) != 0;
+                let shade_corner = !has_edge_a || !has_edge_b || !has_corner;
+                let darkness = 0.5;
+                let color = if shade_corner { [darkness, darkness, darkness] } else { [1., 1., 1.] };
 
-                    vertices.push(cg::Vertex { position, color, normal, uv });
-                }
+                // Get normal
+                let normal = Block::NORMALS[side as usize];
+
+                // Get UV coords
+                let uv = uv_coords[pos];
+
+                vertices.push(cg::Vertex { position, color, normal, uv });
             }
         }
     }

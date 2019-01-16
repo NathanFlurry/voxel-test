@@ -7,6 +7,8 @@
         * https://www.minecraftforum.net/forums/minecraft-java-edition/suggestions/25745-ambient-occlusion
 * Vertex-based lighting
     * Somehow spread light?
+* Texture pack tiles myself so there aren't the ugly black squares
+    * Make sure to add pink null texture
 * Add textures for different sides of blocks
 * Add block config register
 * Infinite world
@@ -16,7 +18,6 @@
 * Simplify planes in to single chunks (see https://medium.com/@fogleman/voxel-rendering-techniques-fa8d869457ca)
     * This complicates lighting + AO
 * Skybox (http://onagat.hatenablog.com/entry/2017/03/24/235635)
-* Texture pack tiles myself so there aren't the ugly black squares
 * Chamfer the edges of the voxels
 * Reference: http://www.opengl-tutorial.org/
 * Process sides incrementally

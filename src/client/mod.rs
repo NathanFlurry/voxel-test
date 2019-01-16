@@ -44,7 +44,7 @@ impl VoxelTest {
         // Add sphere
         let radius = 7;
         world.fill_ellipsoid(
-            world::Block::STONE_BRICK,
+            world::Block::from_id("brick_stone"),
                  &world::WorldBlockIndex::new(16 - radius, 16 - radius, 32 - radius),
                  &world::WorldBlockIndex::new(16 + radius, 16 + radius, 32 + radius)
         );

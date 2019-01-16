@@ -36,7 +36,9 @@ impl WorldDelegate for ProceduralWorld {
 
                 // Set the block to the given height
                 for z in 0..=height as usize {
-                    chunk.set_block(&ChunkBlockIndex::new(x, y, z), Block::DIRT);
+                    let is_top = z == height;
+                    let block_id = if is_top { "dirt_grass" } else { "dirt" };
+                    chunk.set_block(&ChunkBlockIndex::new(x, y, z), Block::from_id(block_id));
                 }
             }
         }

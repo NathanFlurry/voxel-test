@@ -86,7 +86,7 @@ impl Chunk {
         [P, Z, Z],  // Right
         [N, Z, Z],  // Left
         [Z, Z, P],  // Top
-        [Z, Z, N],   // Bottom
+        [Z, Z, N],  // Bottom
     ];
 
     const EDGE_DIRS: [[DeltaDir; 3]; 12] = [
