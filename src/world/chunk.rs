@@ -1,6 +1,6 @@
 use crate::world::block::Block;
 use crate::world::block::BlockSides;
-use crate::world::block::BlockEdgeAO;
+use crate::world::block::BlockEdges;
 use crate::utils;
 
 #[derive(Debug)]
@@ -20,7 +20,7 @@ impl ChunkBlockIndex {
 type BlockDataArray<T> = [[[T; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X];
 type ChunkData = BlockDataArray<Block>;
 type BlockSidesData = BlockDataArray<BlockSides>;
-type BlockCornerAOData = BlockDataArray<BlockEdgeAO>;
+type BlockEdgeData = BlockDataArray<BlockEdges>;
 
 const N: DeltaDir = DeltaDir::Negative;
 const Z: DeltaDir = DeltaDir::Zero;
@@ -29,7 +29,7 @@ const P: DeltaDir = DeltaDir::Positive;
 pub struct Chunk {
     data: ChunkData,
     sides: BlockSidesData,
-    edge_ao: BlockCornerAOData
+    edges: BlockEdgeData
 }
 
 impl Chunk {
@@ -44,7 +44,7 @@ impl Chunk {
         Chunk {
             data: [[[Block::AIR; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
             sides: [[[0b000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
-            edge_ao: [[[[0b0000; 6]; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
+            edges: [[[0b00000000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
         }
     }
 
@@ -66,8 +66,8 @@ impl Chunk {
         &self.sides
     }
 
-    pub fn corner_ao(&self) -> &BlockCornerAOData {
-        &self.edge_ao
+    pub fn edges(&self) -> &BlockEdgeData {
+        &self.edges
     }
 }
 
@@ -82,22 +82,19 @@ impl Chunk {
         [Z, Z, N],   // Bottom
     ];
 
-//    const CORNER_DIRS: [[DeltaDir; 3]; 8] = [ // X and Y are flipped to reflect corresponding coords
-//        [DeltaDir::N, DeltaDir::N,  DeltaDir::N],  // 0: LBC
-//        [DeltaDir::P, DeltaDir::N,  DeltaDir::N],  // 1: RBC
-//        [DeltaDir::P, DeltaDir::P,  DeltaDir::N],  // 2: RBF
-//        [DeltaDir::N, DeltaDir::P,  DeltaDir::N],  // 3: LBF
-//        [DeltaDir::N, DeltaDir::N,  DeltaDir::P],  // 4: LTC
-//        [DeltaDir::P, DeltaDir::N,  DeltaDir::P],  // 5: RTC
-//        [DeltaDir::P, DeltaDir::P,  DeltaDir::P],  // 6: RTF
-//        [DeltaDir::N, DeltaDir::P,  DeltaDir::P]   // 7: LTF
-//    ];
-
-    const EDGE_OFFSETS: [[DetlaDir; 2]; 4] = [
-        [N, N],  // BL
-        [N, P],  // TL
-        [P, P],  // TR
-        [P, N],  // BR
+    const EDGE_DIRS: [[DeltaDir; 3]; 12] = [
+        [P, N, Z],  //  0: CR
+        [N, N, Z],  //  1: CL
+        [Z, N, P],  //  2: CT
+        [Z, N, N],  //  3: CB
+        [P, P, Z],  //  4: FR
+        [N, P, Z],  //  5: FL
+        [Z, P, P],  //  6: FT
+        [Z, P, N],  //  7: FB
+        [P, Z, P],  //  8: RT
+        [P, Z, N],  //  9: RB
+        [N, Z, P],  // 10: LT
+        [N, Z, N],  // 11: LB
     ];
 
     pub fn process_sides(&mut self) -> () {  // TODO: Rename this to `clean_sides` and make `process_sides_for_index` get called every time a block changes
@@ -112,9 +109,8 @@ impl Chunk {
 
     fn process_sides_for_index(&mut self, x: usize, y: usize, z: usize) {
         let mut sides = 0b000000;
-        let mut edge_ao = [0b0000; 6];
+        let mut edges = 0b00000000000;
 
-        // Register the sides if the block is not invisible
         if !self.data[x][y][z].is_invisible() {
             // Check each side of the block
             for side in 0..6 {
@@ -123,22 +119,7 @@ impl Chunk {
                 if let Some(block) = self.get_block_from_dir(x, y, z, dir) {
                     // Show the side if there is no visible block there
                     if block.is_transparent() {
-                        // Flag the side as visible
                         sides |= 1 << side;
-
-                        // Check the edges
-                        for edge_index in 0..4 {
-                            let edge_offset = &Chunk::EDGE_OFFSETS[edge_index];
-
-                            let edge_dir = DeltaDir::merge_dirs(dir, edge_offset);
-
-                            // Flag the edge as dark
-                            if let Some(block) = self.get_block_from_dir(x, y, z, &edge_dir) {
-                                if !block.is_transparent() {
-                                    edge_ao[side] |= 1 << edge_index;
-                                }
-                            }
-                        }
                     }
                 } else {
                     // TODO: Need to check the next chunk over if it's at an edge
@@ -147,11 +128,26 @@ impl Chunk {
                     sides |= 1 << side;
                 }
             }
+
+            // Check each edge of the block
+            for edge in 0..12 {
+                let dir = &Chunk::EDGE_DIRS[edge];
+
+                if let Some(block) = self.get_block_from_dir(x, y, z, dir) {
+                    // Show the edge if there is no visible block there
+                    if block.is_transparent() {
+                        edges |= 1 << edge;
+                    }
+                } else {
+                    // HACK: See above
+                    edges |= 1 << edge;
+                }
+            }
         }
 
         // Save the side data
         self.sides[x][y][z] = sides as u8;
-        self.edge_ao[x][y][z] = corner_ao as u8;
+        self.edges[x][y][z] = edges as u32;
     }
 
     fn get_block_from_dir(&self, x: usize, y: usize, z: usize, dir: &[DeltaDir; 3]) -> Option<Block> {

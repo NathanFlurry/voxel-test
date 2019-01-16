@@ -1,5 +1,5 @@
-pub type BlockSides = u8;
-pub type BlockEdgeAO = [u8; 6];  // 0b0000 for each side indicating if that edge is shaded
+pub type BlockSides = u8;  // 0b000000 flags for each side
+pub type BlockEdges = u32;  // 0b00000000000 flags for each edge
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Block(u8);

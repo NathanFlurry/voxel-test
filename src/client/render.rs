@@ -2,13 +2,6 @@ use super::cg;
 use crate::world::Block;
 use crate::world::Chunk;
 
-/*
-AO Notes:
-* Need to have a bool for every side of a block; so BlockData<[u8; 6]> so there's a bitflag field for every side of a blcok
-    * Edge isn't the case b/c it shouldn't shade the vertex on a different face if it's at a corner
-
-*/
-
 impl Block {
     const SPRITESHEET_WIDTH: usize = 1024;
     const SPRITESHEET_HEIGHT: usize = 2048;
@@ -17,12 +10,12 @@ impl Block {
     const SPRITESHEET_UV_TILE_SIZE_Y: f32 = Block::SPRITESHEET_TILE_SIZE as f32 / Block::SPRITESHEET_HEIGHT as f32;
 
     const FACES: [[usize; 4]; 6] = [
-        [5, 4, 0, 1],  // Close
-        [7, 6, 2, 3],  // Far
-        [6, 5, 1, 2],  // Right
-        [4, 7, 3, 0],  // Left
-        [6, 7, 4, 5],  // Top
-        [1, 0, 3, 2]   // Bottom
+        [5, 4, 0, 1],  // Close;   RTC, LTC, LBC, RBC
+        [7, 6, 2, 3],  // Far;     LTF, RTF, RBF, LBF
+        [6, 5, 1, 2],  // Right;   RTF, RTC, RBC, RBF
+        [4, 7, 3, 0],  // Left;    LTC, LTF, LBF, LBC
+        [6, 7, 4, 5],  // Top;     RTF, LTF, LTC, RTC
+        [1, 0, 3, 2]   // Bottom;  RBC, LBC, LBF, RBF
     ];
 
     const VERTICES: [[f32; 3]; 8] = [
@@ -38,6 +31,20 @@ impl Block {
 
     const FACE_ORDER: [usize; 6] = [
         0, 3, 1, 1, 3, 2
+    ];
+
+    /// Determines the edges for each pair of vertices on a face. For sample, if the face points to
+    /// vertices [a, b, c, d], the corresponding array [5, 7, 9, 11] says that the vertices d -> a
+    /// are edge 5, vertices a -> b are edge 7, vertices b -> c are 9, and vertices c -> d are edge
+    /// 11. Basically, if you want to find the two edges that touch a vertex, look at the vertex
+    /// index and the next item. So vertex a touches edges 5 and 7.
+    const FACE_EDGES: [[usize; 4]; 6] = [
+        [ 0,  2,  1,  3],  // Close;   CT, CL, CB, CR
+        [ 5,  6,  4,  7],  // Far;     FT, FR, FB, FL
+        [ 4,  8,  0,  9],  // Right;   RT, CR, RB, FR
+        [ 1, 10,  5, 11],  // Left;    LT, FL, LB, CL
+        [ 8,  6, 10,  2],  // Top;     FT, LT, CT, RT
+        [ 9,  3, 11,  7]   // Bottom;  CB, LB, FB, RB
     ];
 
     const NORMALS: [[f32; 3]; 6] = [
@@ -56,7 +63,7 @@ impl Block {
 //        [0., 1.],
 //    ];
 
-    pub fn render(&self, vertices: &mut Vec<cg::Vertex>, x: f32, y: f32, z: f32, sides: u8, corner_ao: u8) {
+    pub fn render(&self, vertices: &mut Vec<cg::Vertex>, x: f32, y: f32, z: f32, sides: u8, edges: u32) {
         // If the block is empty, do nothing
         if sides == 0b000000 { return; }
 
@@ -86,10 +93,12 @@ impl Block {
                     position[2] += y;  // Swap Z with Y
 
                     // Get the color
-                    let shade_corner = corner_ao & (1 << vertex_index) != 0b000000;
+                    let has_edge_a = edges & (1 << Block::FACE_EDGES[side][pos]) != 0;
+                    let has_edge_b = edges & (1 << Block::FACE_EDGES[side][(pos + 1) % 4]) != 0;
+                    let shade_corner = !has_edge_a || !has_edge_b;
                     let darkness = 0.5;
-                    let color = if shade_corner { [0., 1., 0.] } else { [1., 1., 1.] };
-//                    let color = if shade_corner { [darkness, darkness, darkness] } else { [1., 1., 1.] };
+//                    let color = if shade_corner { [0., 1., 0.] } else { [1., 1., 1.] };
+                    let color = if shade_corner { [darkness, darkness, darkness] } else { [1., 1., 1.] };
 
                     // Get normal
                     let normal = Block::NORMALS[side as usize];
@@ -111,7 +120,7 @@ impl Chunk {
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
                 for z in 0..Chunk::SIZE_Z {
-                    self.data()[x][y][z].render(vertices, x as f32, y as f32, z as f32, self.sides()[x][y][z], self.corner_ao()[x][y][z]);
+                    self.data()[x][y][z].render(vertices, x as f32, y as f32, z as f32, self.sides()[x][y][z], self.edges()[x][y][z]);
                 }
             }
         }
