@@ -1,5 +1,6 @@
 pub type BlockSides = u8;  // 0b000000 flags for each side
 pub type BlockEdges = u32;  // 0b00000000000 flags for each edge
+pub type BlockCorners = u8;  // 0b0000000 flags for each corner
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Block(u8);

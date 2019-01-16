@@ -15,7 +15,7 @@ impl Block {
         [6, 5, 1, 2],  // Right;   RTF, RTC, RBC, RBF
         [4, 7, 3, 0],  // Left;    LTC, LTF, LBF, LBC
         [6, 7, 4, 5],  // Top;     RTF, LTF, LTC, RTC
-        [1, 0, 3, 2]   // Bottom;  RBC, LBC, LBF, RBF
+        [1, 0, 3, 2],  // Bottom;  RBC, LBC, LBF, RBF
     ];
 
     const VERTICES: [[f32; 3]; 8] = [
@@ -26,7 +26,7 @@ impl Block {
         [0., 1., 0.],  // 4: LTC
         [1., 1., 0.],  // 5: RTC
         [1., 1., 1.],  // 6: RTF
-        [0., 1., 1.]   // 7: LTF
+        [0., 1., 1.],  // 7: LTF
     ];
 
     const FACE_ORDER: [usize; 6] = [
@@ -63,7 +63,7 @@ impl Block {
 //        [0., 1.],
 //    ];
 
-    pub fn render(&self, vertices: &mut Vec<cg::Vertex>, x: f32, y: f32, z: f32, sides: u8, edges: u32) {
+    pub fn render(&self, vertices: &mut Vec<cg::Vertex>, x: f32, y: f32, z: f32, sides: u8, edges: u32, corners: u8) {
         // If the block is empty, do nothing
         if sides == 0b000000 { return; }
 
@@ -86,7 +86,7 @@ impl Block {
                 let face_index = &Block::FACES[side];
                 for &pos in &Block::FACE_ORDER {
                     // Get position
-                    let vertex_index = face_index[pos];
+                    let vertex_index = face_index[pos];  // Also used as the corner index
                     let mut position = Block::VERTICES[vertex_index];
                     position[0] += x;
                     position[1] += z;  // Swap Y with Z
@@ -95,7 +95,8 @@ impl Block {
                     // Get the color
                     let has_edge_a = edges & (1 << Block::FACE_EDGES[side][pos]) != 0;
                     let has_edge_b = edges & (1 << Block::FACE_EDGES[side][(pos + 1) % 4]) != 0;
-                    let shade_corner = !has_edge_a || !has_edge_b;
+                    let has_corner = corners & (1 << vertex_index) != 0;
+                    let shade_corner = !has_edge_a || !has_edge_b || !has_corner;
                     let darkness = 0.5;
 //                    let color = if shade_corner { [0., 1., 0.] } else { [1., 1., 1.] };
                     let color = if shade_corner { [darkness, darkness, darkness] } else { [1., 1., 1.] };
@@ -120,7 +121,7 @@ impl Chunk {
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
                 for z in 0..Chunk::SIZE_Z {
-                    self.data()[x][y][z].render(vertices, x as f32, y as f32, z as f32, self.sides()[x][y][z], self.edges()[x][y][z]);
+                    self.data()[x][y][z].render(vertices, x as f32, y as f32, z as f32, self.sides()[x][y][z], self.edges()[x][y][z], self.corners()[x][y][z]);
                 }
             }
         }

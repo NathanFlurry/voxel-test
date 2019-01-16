@@ -2,6 +2,7 @@ use crate::world::block::Block;
 use crate::world::block::BlockSides;
 use crate::world::block::BlockEdges;
 use crate::utils;
+use crate::world::block::BlockCorners;
 
 #[derive(Debug)]
 pub struct ChunkBlockIndex {  // TODO: Remove all these unneeded structures
@@ -21,6 +22,7 @@ type BlockDataArray<T> = [[[T; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X];
 type ChunkData = BlockDataArray<Block>;
 type BlockSidesData = BlockDataArray<BlockSides>;
 type BlockEdgeData = BlockDataArray<BlockEdges>;
+type BlockCornerData = BlockDataArray<BlockCorners>;
 
 const N: DeltaDir = DeltaDir::Negative;
 const Z: DeltaDir = DeltaDir::Zero;
@@ -29,7 +31,8 @@ const P: DeltaDir = DeltaDir::Positive;
 pub struct Chunk {
     data: Box<ChunkData>,
     sides: Box<BlockSidesData>,
-    edges: Box<BlockEdgeData>
+    edges: Box<BlockEdgeData>,
+    corners: Box<BlockCornerData>,
 }
 
 impl Chunk {
@@ -44,7 +47,8 @@ impl Chunk {
         Chunk {
             data: Box::new([[[Block::AIR; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X]),
             sides: Box::new([[[0b000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X]),
-            edges: Box::new([[[0b00000000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X])
+            edges: Box::new([[[0b00000000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X]),
+            corners: Box::new([[[0b0000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X])
         }
     }
 
@@ -68,6 +72,10 @@ impl Chunk {
 
     pub fn edges(&self) -> &BlockEdgeData {
         &self.edges
+    }
+
+    pub fn corners(&self) -> &BlockCornerData {
+        &self.corners
     }
 }
 
@@ -97,6 +105,17 @@ impl Chunk {
         [N, Z, N],  // 11: LB
     ];
 
+    const CORNER_DIRS: [[DeltaDir; 3]; 8] = [  // Y and Z are flipped
+        [N, N, N],  // 0: LBC
+        [P, N, N],  // 1: RBC
+        [P, P, N],  // 2: RBF
+        [N, P, N],  // 3: LBF
+        [N, N, P],  // 4: LTC
+        [P, N, P],  // 5: RTC
+        [P, P, P],  // 6: RTF
+        [N, P, P],  // 7: LTF
+    ];
+
     pub fn process_sides(&mut self) -> () {  // TODO: Rename this to `clean_sides` and make `process_sides_for_index` get called every time a block changes
         for x in 0..Chunk::SIZE_X {
             for y in 0..Chunk::SIZE_Y {
@@ -110,6 +129,7 @@ impl Chunk {
     fn process_sides_for_index(&mut self, x: usize, y: usize, z: usize) {
         let mut sides = 0b000000;
         let mut edges = 0b00000000000;
+        let mut corners = 0b00000000;
 
         if !self.data[x][y][z].is_invisible() {
             // Check each side of the block
@@ -143,11 +163,27 @@ impl Chunk {
                     edges |= 1 << edge;
                 }
             }
+
+            // Check each corner of the block
+            for corner in 0..8 {
+                let dir = &Chunk::CORNER_DIRS[corner];
+
+                if let Some(block) = self.get_block_from_dir(x, y, z, dir) {
+                    // Show the edge if there is no visible block there
+                    if block.is_transparent() {
+                        corners |= 1 << corner;
+                    }
+                } else {
+                    // HACK: See above
+                    corners |= 1 << corner;
+                }
+            }
         }
 
         // Save the side data
         self.sides[x][y][z] = sides as u8;
         self.edges[x][y][z] = edges as u32;
+        self.corners[x][y][z] = corners as u8;
     }
 
     fn get_block_from_dir(&self, x: usize, y: usize, z: usize, dir: &[DeltaDir; 3]) -> Option<Block> {

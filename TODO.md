@@ -2,9 +2,9 @@
 * Chamfered edges
     * Use the existing edge data
 * Vertex-based AO
-    * Need to shade the crevices
-    * Now need to figure out how to make the cornered blocks be shaded
-        * Not sure how to do this...
+    * Turn the AO in to a texture
+        * Need one for every combination of corners
+        * https://www.minecraftforum.net/forums/minecraft-java-edition/suggestions/25745-ambient-occlusion
 * Vertex-based lighting
     * Somehow spread light?
 * Add textures for different sides of blocks
