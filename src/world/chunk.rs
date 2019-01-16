@@ -27,9 +27,9 @@ const Z: DeltaDir = DeltaDir::Zero;
 const P: DeltaDir = DeltaDir::Positive;
 
 pub struct Chunk {
-    data: ChunkData,
-    sides: BlockSidesData,
-    edges: BlockEdgeData
+    data: Box<ChunkData>,
+    sides: Box<BlockSidesData>,
+    edges: Box<BlockEdgeData>
 }
 
 impl Chunk {
@@ -42,9 +42,9 @@ impl Chunk {
 
     pub fn empty() -> Chunk {
         Chunk {
-            data: [[[Block::AIR; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
-            sides: [[[0b000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
-            edges: [[[0b00000000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X],
+            data: Box::new([[[Block::AIR; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X]),
+            sides: Box::new([[[0b000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X]),
+            edges: Box::new([[[0b00000000000; Chunk::SIZE_Z]; Chunk::SIZE_Y]; Chunk::SIZE_X])
         }
     }
 
