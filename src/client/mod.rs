@@ -45,15 +45,15 @@ impl VoxelTest {
         let radius = 7;
         world.fill_ellipsoid(
             world::Block::from_id("brick_stone"),
-                 &world::WorldBlockIndex::new(16 - radius, 16 - radius, 32 - radius),
-                 &world::WorldBlockIndex::new(16 + radius, 16 + radius, 32 + radius)
+            &world::WorldBlockIndex::new(16 - radius, 16 - radius, 32 - radius),
+            &world::WorldBlockIndex::new(16 + radius, 16 + radius, 32 + radius)
         );
 
         for chunk_x in 0..3 {
             for chunk_y in 0..3 {
                 for chunk_z in 0..1 {
                     // Get the chunk and process the sides
-                    let chunk = world.get_or_create_chunk(&world::ChunkIndex::new(chunk_x, chunk_y, 0));
+                    let chunk = world.get_or_create_chunk(&world::ChunkIndex::new(chunk_x, chunk_y, chunk_z));
                     chunk.process_sides();
 
                     // Get chunk vertices
