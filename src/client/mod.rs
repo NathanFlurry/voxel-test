@@ -49,8 +49,8 @@ impl VoxelTest {
                  &world::WorldBlockIndex::new(16 + radius, 16 + radius, 32 + radius)
         );
 
-        for chunk_x in 0..5 {
-            for chunk_y in 0..5 {
+        for chunk_x in 0..3 {
+            for chunk_y in 0..3 {
                 for chunk_z in 0..1 {
                     // Get the chunk and process the sides
                     let chunk = world.get_or_create_chunk(&world::ChunkIndex::new(chunk_x, chunk_y, 0));

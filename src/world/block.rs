@@ -26,6 +26,8 @@ lazy_static! {
         bc.push(BlockConfig::new("grass_large", true, BlockConfig::texture_all((4, 2))));
 //        bc.push(BlockConfig::new("cotton_tan", true, BlockConfig::texture_all((4, 2))));
 
+        bc.push(BlockConfig::new("stone", true, BlockConfig::texture_all((2, 5))));
+
         bc
     };
 }
