@@ -38,6 +38,10 @@ impl CameraState {
         }
     }
 
+    pub fn get_position(&self) -> &Vector3<f32> {
+        &self.position
+    }
+
     #[allow(dead_code)]  // TODO: Remove
     pub fn set_position(&mut self, pos: Vector3<f32>) {
         self.position = pos;

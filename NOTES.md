@@ -13,6 +13,5 @@
     * There's a bug in the current verison of the compiler due to the chunk structure being too large to insert in to a hashmap
 * Will crash since `is_current` is false if macOS is still animating from one space to the actual game; need to report this error
     * Can't seem to reproduce this
-
-## Requirements
-* Cmake (for glsl-to-spirv)
+* When casting from float to integer, the cast is saturating so we don't have to check the min or max values for any of our floats
+    * Warning: The behavior is different when casting between integers; instead, when down casting, it uses modulo 

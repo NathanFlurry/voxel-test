@@ -41,6 +41,9 @@ impl Chunk {
     pub const SIZE_X_U32: u32 = Chunk::SIZE_X as u32;
     pub const SIZE_Y_U32: u32 = Chunk::SIZE_Y as u32;
     pub const SIZE_Z_U32: u32 = Chunk::SIZE_Z as u32;
+    pub const SIZE_X_F32: f32 = Chunk::SIZE_X as f32;
+    pub const SIZE_Y_F32: f32 = Chunk::SIZE_Y as f32;
+    pub const SIZE_Z_F32: f32 = Chunk::SIZE_Z as f32;
 
     pub fn empty() -> Chunk {
         Chunk {

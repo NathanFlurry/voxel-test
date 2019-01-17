@@ -4,6 +4,8 @@ use crate::world::ChunkBlockIndex;
 use crate::world::Block;
 use crate::world::ChunkIndex;
 use noise::{NoiseFn, Seedable, MultiFractal};
+use std::time::Instant;
+use crate::utils::AsFloatSeconds;
 
 type NoiseType = noise::Fbm;
 
@@ -23,6 +25,8 @@ impl ProceduralWorld {
 
 impl WorldDelegate for ProceduralWorld {
     fn create_chunk(&self, index: &ChunkIndex) -> Chunk {
+        let start_instant = Instant::now();
+
         let mut chunk = Chunk::empty();
 
         // Create floor
@@ -31,27 +35,29 @@ impl WorldDelegate for ProceduralWorld {
                 // Sample the noise for the height
                 let world_x = x + index.x as usize * Chunk::SIZE_X;
                 let world_y = y + index.y as usize * Chunk::SIZE_Y;
+                let world_z = index.z as usize * Chunk::SIZE_Z;
                 let noise_coords = [world_x as f64, world_y as f64];
 
-                // Get the height of the terrain
+                // Get the height of the terrain; saturating
                 let height = (Chunk::SIZE_Z as f64 / 2.) +  self.height_noise.get(noise_coords) * 10.;
-                let height = height.max(0.).min(Chunk::SIZE_Z as f64) as usize;
+                let height = height as usize;
 
-                // Determine the depth of the grass
+                // Determine the depth of the grass; saturating
                 let grass_depth = (self.dirt_depth_noise.get(noise_coords) + 1.5) * 3.;
-                let grass_depth = grass_depth.max(0.);
                 let grass_depth = (grass_depth as usize).min(height);
                 let grass_height = height - grass_depth;
 
                 // Set the block to the given height
-                for z in 0..=height as usize {
+                for z in world_z..=height as usize {
                     let is_top = z == height;
                     let is_dirt = z >= grass_height;
                     let block_id = if is_dirt { if is_top { "dirt_grass" } else { "dirt" } } else { "stone" };
-                    chunk.set_block(&ChunkBlockIndex::new(x, y, z), Block::from_id(block_id));
+                    chunk.set_block(&ChunkBlockIndex::new(x, y, z - world_z), Block::from_id(block_id));
                 }
             }
         }
+
+        println!("Generated chunk {} {} {} - {:.2}", index.x, index.y, index.z, start_instant.elapsed().as_float_seconds());
 
         chunk
     }
