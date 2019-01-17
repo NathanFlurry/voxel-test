@@ -6,7 +6,8 @@ use crate::utils;
 use utils::RangeContains;
 use std::u32;
 use std::time::Instant;
-use utils::AsFloatSeconds;
+use crate::utils::AsFloatSeconds;
+use crate::utils::ChunkClamp;
 
 pub struct ChunkMesh {
     pub transform: Matrix4<f32>,
@@ -36,9 +37,9 @@ impl WorldRenderer {
         // Get the current chunk; saturating
         let camera_pos = camera.get_position();
         let current_chunk = world::ChunkIndex::new(
-            (camera_pos[0] / world::Chunk::SIZE_X_F32) as u32,
-            (camera_pos[2] / world::Chunk::SIZE_Y_F32) as u32,  // Flip Y with Z
-            (camera_pos[1] / world::Chunk::SIZE_Z_F32) as u32,  // Flip Z with Y
+            (camera_pos[0] / world::Chunk::SIZE_X_F32).chunk_clamp_x() as u32,
+            (camera_pos[2] / world::Chunk::SIZE_Y_F32).chunk_clamp_y() as u32,  // Flip Y with Z
+            (camera_pos[1] / world::Chunk::SIZE_Z_F32).chunk_clamp_z() as u32,  // Flip Z with Y
         );
 
         // Get view distance
