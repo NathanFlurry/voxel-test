@@ -35,42 +35,42 @@ pub trait ChunkClamp {
 
 impl ChunkClamp for f32 {
     fn chunk_clamp_x(self) -> Self {
-        self.min(world::Chunk::SIZE_X_F32).max(0.)
+        self.min(world::Chunk::SIZE_X_F32 - 1.).max(0.)
     }
 
     fn chunk_clamp_y(self) -> Self {
-        self.min(world::Chunk::SIZE_Y_F32).max(0.)
+        self.min(world::Chunk::SIZE_Y_F32 - 1.).max(0.)
     }
 
     fn chunk_clamp_z(self) -> Self {
-        self.min(world::Chunk::SIZE_Z_F32).max(0.)
+        self.min(world::Chunk::SIZE_Z_F32 - 1.).max(0.)
     }
 }
 
 impl ChunkClamp for u32 {
     fn chunk_clamp_x(self) -> Self {
-        self.min(world::Chunk::SIZE_X_U32)
+        self.min(world::Chunk::SIZE_X_U32 - 1)
     }
 
     fn chunk_clamp_y(self) -> Self {
-        self.min(world::Chunk::SIZE_Y_U32)
+        self.min(world::Chunk::SIZE_Y_U32 - 1)
     }
 
     fn chunk_clamp_z(self) -> Self {
-        self.min(world::Chunk::SIZE_Z_U32)
+        self.min(world::Chunk::SIZE_Z_U32 - 1)
     }
 }
 
 impl ChunkClamp for usize {
     fn chunk_clamp_x(self) -> Self {
-        self.min(world::Chunk::SIZE_X)
+        self.min(world::Chunk::SIZE_X - 1)
     }
 
     fn chunk_clamp_y(self) -> Self {
-        self.min(world::Chunk::SIZE_Y)
+        self.min(world::Chunk::SIZE_Y - 1)
     }
 
     fn chunk_clamp_z(self) -> Self {
-        self.min(world::Chunk::SIZE_Z)
+        self.min(world::Chunk::SIZE_Z - 1)
     }
 }
