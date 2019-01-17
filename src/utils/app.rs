@@ -7,7 +7,7 @@ use crate::utils::AsFloatSeconds;
 pub trait AppState {
     fn update(&mut self, app: &mut App, dt: f32);
     fn render(&mut self,  app: &mut App, dt: f32);
-    fn process_event(&mut self, event: glutin::Event);
+    fn process_event(&mut self, app: &mut App, event: glutin::Event);
 }
 
 struct AppInitData {
@@ -80,7 +80,7 @@ impl App {
                 self.window_state.process_event(&event);
 
                 // Send event to the state
-                state.process_event(event);
+                state.process_event(&mut self, event);
             });
 
             // Stop if needed

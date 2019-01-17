@@ -102,12 +102,48 @@ impl utils::AppState for VoxelTest {
         target.finish().unwrap();
     }
 
-    fn process_event(&mut self, event: glutin::Event) {
+    fn process_event(&mut self, _app: &mut utils::App, event: glutin::Event) {
         // Update camera
-        self.camera.process_input(&event)
+        self.camera.process_input(&event);
+
+        // Toggle debug data
+        match event {
+            glutin::Event::WindowEvent { ref event, .. } => match *event {
+                glutin::WindowEvent::KeyboardInput { ref input, .. } => {
+                    // Get key state
+                    if input.state != glutin::ElementState::Pressed { return }
+                    let key = match input.virtual_keycode {
+                        Some(key) => key,
+                        None => return,
+                    };
+
+                    // Toggle debug mode
+                    match key {
+                        glutin::VirtualKeyCode::Grave => self.toggle_debug_mode(),
+
+                        _ => { },
+                    };
+                },
+
+                _ => { }
+            },
+
+            _ => { }
+        }
     }
 }
 
 impl VoxelTest {
+    fn toggle_debug_mode(&mut self) {
+        // Get the next polygon mode
+        let (next_mode, next_cull) = match self.draw_params.polygon_mode {
+            glium::PolygonMode::Point => (glium::PolygonMode::Fill, true),
+            glium::PolygonMode::Line => (glium::PolygonMode::Point, false),
+            glium::PolygonMode::Fill => (glium::PolygonMode::Line, false),
+        };
 
+        // Save the mode
+        self.draw_params.polygon_mode = next_mode;
+        self.draw_params.backface_culling = if next_cull { glium::BackfaceCullingMode::CullClockwise } else { glium::BackfaceCullingMode::CullingDisabled };
+    }
 }
