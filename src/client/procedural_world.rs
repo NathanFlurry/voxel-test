@@ -57,7 +57,7 @@ impl WorldDelegate for ProceduralWorld {
             }
         }
 
-        println!("Generated chunk {} - {:.2}", index, start_instant.elapsed().as_float_seconds());
+        println!("Generated chunk {} - {:.3}", index, start_instant.elapsed().as_float_seconds());
 
         chunk
     }

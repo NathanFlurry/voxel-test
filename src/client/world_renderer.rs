@@ -75,18 +75,18 @@ impl WorldRenderer {
                     // Get or create the chunk
                     let chunk_get_start = Instant::now();
                     let chunk = world.get_or_create_chunk(&chunk_index);
-                    println!("> Fetched chunk {} - {:.2}", chunk_index, chunk_get_start.elapsed().as_float_seconds());
+                    println!("> Fetched chunk {} - {:.3}", chunk_index, chunk_get_start.elapsed().as_float_seconds());
 
                     // Process the chunk sides
                     let process_sides_start = Instant::now();
                     chunk.process_sides();
-                    println!("> Processed sides {} - {:.2}", chunk_index, process_sides_start.elapsed().as_float_seconds());
+                    println!("> Processed sides {} - {:.3}", chunk_index, process_sides_start.elapsed().as_float_seconds());
 
                     // Get chunk vertices
                     let process_sides_start = Instant::now();
                     let mut vertices = Vec::new();
                     chunk.render(&mut vertices);
-                    println!("> Rendered chunk {} - {:.2}", chunk_index, process_sides_start.elapsed().as_float_seconds());
+                    println!("> Rendered chunk {} - {:.3}", chunk_index, process_sides_start.elapsed().as_float_seconds());
 
                     // Create mesh
                     let transform = [
@@ -105,7 +105,7 @@ impl WorldRenderer {
                     // Save the mesh
                     self.visible_chunks.insert(chunk_index.clone(), ChunkMesh { transform, vertex_buffer });
 
-                    println!("Finished chunk {} - {:.2}", chunk_index, start_instant.elapsed().as_float_seconds());
+                    println!("Finished chunk {} - {:.3}", chunk_index, start_instant.elapsed().as_float_seconds());
                 }
             }
         }

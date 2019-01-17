@@ -23,3 +23,7 @@
 * Process sides incrementally
     * Only when a block is changed, process sides for the blocks around it
     * Add a way to batch process sides for things like filling large areas of blocks or initial chunk generation
+* Add fog so you can't see the edge of your view distance
+* Make view distance circular since you don't need to load the corners
+    * This also staggers the mesh generation
+    * Line this up with the fog

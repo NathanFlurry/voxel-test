@@ -33,7 +33,7 @@ impl VoxelTest {
         let image_dimensions = image.dimensions();
         let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
         let texture = glium::texture::Texture2d::new(&app.display, image).unwrap();
-        println!("Spritesheet loaded - {:.2}", image_start.elapsed().as_float_seconds());
+        println!("Spritesheet loaded - {:.3}", image_start.elapsed().as_float_seconds());
 
         // Add sphere
         let radius = 7;
