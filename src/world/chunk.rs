@@ -88,6 +88,24 @@ impl Chunk {
     }
 }
 
+impl Chunk {
+    pub fn block_count(&self) -> u16 {
+        // Count each non-invisible block
+        let mut count = 0;
+        for x in 0..Chunk::SIZE_X {
+            for y in 0..Chunk::SIZE_Y {
+                for z in 0..Chunk::SIZE_Z {
+                    if !self.data[x][y][z].is_invisible() {
+                        count += 1;
+                    }
+                }
+            }
+        }
+
+        count
+    }
+}
+
 /*** SIDE PROCESSING ***/
 impl Chunk {
     const SIDE_DIRS: [[DeltaDir; 3]; 6] = [

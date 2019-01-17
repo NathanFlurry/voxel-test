@@ -75,7 +75,7 @@ impl WorldRenderer {
                     // Get or create the chunk
                     let chunk_get_start = Instant::now();
                     let chunk = world.get_or_create_chunk(&chunk_index);
-                    println!("> Fetched chunk {} - {:.3}", chunk_index, chunk_get_start.elapsed().as_float_seconds());
+                    println!("> Fetched chunk {} - {} blocks - {:.3}", chunk_index, chunk.block_count(), chunk_get_start.elapsed().as_float_seconds());
 
                     // Process the chunk sides
                     let process_sides_start = Instant::now();
@@ -86,7 +86,7 @@ impl WorldRenderer {
                     let process_sides_start = Instant::now();
                     let mut vertices = Vec::new();
                     chunk.render(&mut vertices);
-                    println!("> Rendered chunk {} - {:.3}", chunk_index, process_sides_start.elapsed().as_float_seconds());
+                    println!("> Rendered chunk {} - {} tris - {:.3}", chunk_index, vertices.len() / 3, process_sides_start.elapsed().as_float_seconds());
 
                     // Create mesh
                     let transform = [
