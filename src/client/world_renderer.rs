@@ -56,7 +56,7 @@ impl WorldRenderer {
         }
         for chunk_index in chunks_to_remove {
             self.visible_chunks.remove(&chunk_index);
-            println!("Removed chunk {} {} {}", chunk_index.x, chunk_index.y, chunk_index.z);
+            println!("Removed chunk {}", chunk_index);
         }
 
         // Add new chunks
@@ -70,14 +70,23 @@ impl WorldRenderer {
                     if self.visible_chunks.contains_key(&chunk_index) { continue; }
 
                     let start_instant = Instant::now();
+                    println!("Starting chunk {}", chunk_index);
 
-                    // Create the chunk
+                    // Get or create the chunk
+                    let chunk_get_start = Instant::now();
                     let chunk = world.get_or_create_chunk(&chunk_index);
+                    println!("> Fetched chunk {} - {:.2}", chunk_index, chunk_get_start.elapsed().as_float_seconds());
+
+                    // Process the chunk sides
+                    let process_sides_start = Instant::now();
                     chunk.process_sides();
+                    println!("> Processed sides {} - {:.2}", chunk_index, process_sides_start.elapsed().as_float_seconds());
 
                     // Get chunk vertices
+                    let process_sides_start = Instant::now();
                     let mut vertices = Vec::new();
                     chunk.render(&mut vertices);
+                    println!("> Rendered chunk {} - {:.2}", chunk_index, process_sides_start.elapsed().as_float_seconds());
 
                     // Create mesh
                     let transform = [
@@ -94,9 +103,9 @@ impl WorldRenderer {
                     let vertex_buffer = glium::VertexBuffer::new(&app.display, &vertices[..]).unwrap();
 
                     // Save the mesh
-                    self.visible_chunks.insert(chunk_index, ChunkMesh { transform, vertex_buffer });
+                    self.visible_chunks.insert(chunk_index.clone(), ChunkMesh { transform, vertex_buffer });
 
-                    println!("Rendered chunk {} {} {} - {:.2}", chunk_x, chunk_y, chunk_z, start_instant.elapsed().as_float_seconds());
+                    println!("Finished chunk {} - {:.2}", chunk_index, start_instant.elapsed().as_float_seconds());
                 }
             }
         }

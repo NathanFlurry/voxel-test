@@ -2,6 +2,7 @@ use crate::world::block::Block;
 use crate::world::block::BlockSides;
 use crate::world::block::BlockEdges;
 use crate::world::block::BlockCorners;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct ChunkBlockIndex {  // TODO: Remove all these unneeded structures
@@ -14,6 +15,12 @@ impl ChunkBlockIndex {
     #[inline]
     pub fn new(x: usize, y: usize, z: usize) -> ChunkBlockIndex {
         ChunkBlockIndex { x, y, z }
+    }
+}
+
+impl fmt::Display for ChunkBlockIndex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "<{},{},{}>", self.x, self.y, self.z)
     }
 }
 

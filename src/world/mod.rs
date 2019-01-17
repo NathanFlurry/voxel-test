@@ -4,6 +4,7 @@ mod chunk;
 pub use chunk::*;
 pub use block::*;
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct WorldBlockIndex {
@@ -34,6 +35,12 @@ impl WorldBlockIndex {
     }
 }
 
+impl fmt::Display for WorldBlockIndex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "[{},{},{}]", self.x, self.y, self.z)
+    }
+}
+
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct ChunkIndex {
     pub x: u32,
@@ -45,6 +52,12 @@ impl ChunkIndex {
     #[inline]
     pub fn new(x: u32, y: u32, z: u32) -> ChunkIndex {
         ChunkIndex { x, y, z }
+    }
+}
+
+impl fmt::Display for ChunkIndex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "({},{},{})", self.x, self.y, self.z)
     }
 }
 
