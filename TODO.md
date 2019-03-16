@@ -15,7 +15,7 @@
 * Fill edge of chunks
 * Transparent textures
 * Add bounding rects to only render visible items
-* Simplify planes in to single chunks (see https://medium.com/@fogleman/voxel-rendering-techniques-fa8d869457ca)
+* Simplify planes in to single chunks using greedy meshing (see https://medium.com/@fogleman/voxel-rendering-techniques-fa8d869457ca)
     * This complicates lighting + AO
 * Skybox (http://onagat.hatenablog.com/entry/2017/03/24/235635)
 * Chamfer the edges of the voxels

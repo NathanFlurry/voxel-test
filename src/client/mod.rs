@@ -58,7 +58,7 @@ impl VoxelTest {
             camera: utils::CameraState::new([32., 64., 32.], [0., 0., 1.]),
 
             world,
-            world_renderer: world_renderer::WorldRenderer::new(1),
+            world_renderer: world_renderer::WorldRenderer::new(2),
             tile_texture: texture
         }
     }
